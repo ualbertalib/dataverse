@@ -5,43 +5,12 @@
  */
 package edu.harvard.iq.dataverse.authorization.providers.builtin;
 
-import edu.harvard.iq.dataverse.DataFile;
-import edu.harvard.iq.dataverse.DataFileServiceBean;
-import edu.harvard.iq.dataverse.Dataset;
-import edu.harvard.iq.dataverse.DatasetServiceBean;
-import edu.harvard.iq.dataverse.DatasetVersionServiceBean;
-import edu.harvard.iq.dataverse.Dataverse;
-import edu.harvard.iq.dataverse.DataverseHeaderFragment;
-import edu.harvard.iq.dataverse.DataverseServiceBean;
-import edu.harvard.iq.dataverse.DataverseSession;
-import edu.harvard.iq.dataverse.DvObject;
-import edu.harvard.iq.dataverse.PermissionServiceBean;
-import edu.harvard.iq.dataverse.PermissionsWrapper;
-import edu.harvard.iq.dataverse.RoleAssignment;
-import edu.harvard.iq.dataverse.SettingsWrapper;
-import edu.harvard.iq.dataverse.UserNotification;
-import static edu.harvard.iq.dataverse.UserNotification.Type.CREATEDV;
-import edu.harvard.iq.dataverse.UserNotificationServiceBean;
-import edu.harvard.iq.dataverse.authorization.AuthenticationServiceBean;
-import edu.harvard.iq.dataverse.authorization.UserRecordIdentifier;
-import edu.harvard.iq.dataverse.authorization.groups.Group;
-import edu.harvard.iq.dataverse.authorization.groups.GroupServiceBean;
-import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
-import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailData;
-import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailException;
-import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailInitResponse;
-import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailServiceBean;
-import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailUtil;
-import edu.harvard.iq.dataverse.mydata.MyDataPage;
-import edu.harvard.iq.dataverse.passwordreset.PasswordValidator;
-import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
-import edu.harvard.iq.dataverse.util.BundleUtil;
-import edu.harvard.iq.dataverse.util.JsfHelper;
 import static edu.harvard.iq.dataverse.util.JsfHelper.JH;
-import edu.harvard.iq.dataverse.util.SystemConfig;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.sql.Timestamp;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -49,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.ejb.EJB;
 import javax.faces.application.FacesMessage;
 import javax.faces.component.UIComponent;
@@ -58,9 +28,41 @@ import javax.faces.event.ActionEvent;
 import javax.faces.view.ViewScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
+
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.primefaces.event.TabChangeEvent;
+
+import edu.harvard.iq.dataverse.DataFile;
+import edu.harvard.iq.dataverse.DataFileServiceBean;
+import edu.harvard.iq.dataverse.Dataset;
+import edu.harvard.iq.dataverse.DatasetServiceBean;
+import edu.harvard.iq.dataverse.DatasetVersionServiceBean;
+import edu.harvard.iq.dataverse.Dataverse;
+import edu.harvard.iq.dataverse.DataverseServiceBean;
+import edu.harvard.iq.dataverse.DataverseSession;
+import edu.harvard.iq.dataverse.DvObject;
+import edu.harvard.iq.dataverse.PermissionServiceBean;
+import edu.harvard.iq.dataverse.PermissionsWrapper;
+import edu.harvard.iq.dataverse.RoleAssignment;
+import edu.harvard.iq.dataverse.SettingsWrapper;
+import edu.harvard.iq.dataverse.UserNotification;
+import edu.harvard.iq.dataverse.UserNotificationServiceBean;
+import edu.harvard.iq.dataverse.authorization.AuthenticationServiceBean;
+import edu.harvard.iq.dataverse.authorization.UserRecordIdentifier;
+import edu.harvard.iq.dataverse.authorization.groups.Group;
+import edu.harvard.iq.dataverse.authorization.groups.GroupServiceBean;
+import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
+import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailException;
+import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailInitResponse;
+import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailServiceBean;
+import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailUtil;
+import edu.harvard.iq.dataverse.mydata.MyDataPage;
+import edu.harvard.iq.dataverse.passwordreset.PasswordValidator;
+import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
+import edu.harvard.iq.dataverse.util.BundleUtil;
+import edu.harvard.iq.dataverse.util.JsfHelper;
+import edu.harvard.iq.dataverse.util.SystemConfig;
 
 /**
  *
@@ -135,7 +137,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return currentUser;
     }
 
-    public void setCurrentUser(AuthenticatedUser currentUser) {
+    public void setCurrentUser(final AuthenticatedUser currentUser) {
         this.currentUser = currentUser;
     }
 
@@ -143,7 +145,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return builtinUser;
     }
 
-    public void setBuiltinUser(BuiltinUser builtinUser) {
+    public void setBuiltinUser(final BuiltinUser builtinUser) {
         this.builtinUser = builtinUser;
     }
      
@@ -151,7 +153,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return editMode;
     }
 
-    public void setEditMode(EditMode editMode) {
+    public void setEditMode(final EditMode editMode) {
         this.editMode = editMode;
     }
 
@@ -159,7 +161,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return redirectPage;
     }
 
-    public void setRedirectPage(String redirectPage) {
+    public void setRedirectPage(final String redirectPage) {
         this.redirectPage = redirectPage;
     } 
 
@@ -167,7 +169,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return inputPassword;
     }
 
-    public void setInputPassword(String inputPassword) {
+    public void setInputPassword(final String inputPassword) {
         this.inputPassword = inputPassword;
     }
 
@@ -175,7 +177,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return currentPassword;
     }
 
-    public void setCurrentPassword(String currentPassword) {
+    public void setCurrentPassword(final String currentPassword) {
         this.currentPassword = currentPassword;
     }
 
@@ -187,7 +189,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return dataverseId;
     }
 
-    public void setDataverseId(Long dataverseId) {
+    public void setDataverseId(final Long dataverseId) {
         this.dataverseId = dataverseId;
     }
 
@@ -197,7 +199,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return notificationsList;
     }
 
-    public void setNotificationsList(List notificationsList) {
+    public void setNotificationsList(final List notificationsList) {
         this.notificationsList = notificationsList;
     }
 
@@ -205,7 +207,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return activeIndex;
     }
 
-    public void setActiveIndex(int activeIndex) {
+    public void setActiveIndex(final int activeIndex) {
         this.activeIndex = activeIndex;
     }
 
@@ -213,7 +215,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return selectTab;
     }
 
-    public void setSelectTab(String selectTab) {
+    public void setSelectTab(final String selectTab) {
         this.selectTab = selectTab;
     }
 
@@ -221,15 +223,15 @@ public class BuiltinUserPage implements java.io.Serializable {
         return usernameField;
     }
 
-    public void setUsernameField(UIInput usernameField) {
+    public void setUsernameField(final UIInput usernameField) {
         this.usernameField = usernameField;
     }
 
     public String init() {
 
         // prevent creating a user if signup not allowed.
-        boolean safeDefaultIfKeyNotFound = true;
-        boolean signupAllowed = settingsWrapper.isTrueForKey(SettingsServiceBean.Key.AllowSignUp.toString(), safeDefaultIfKeyNotFound);
+        final boolean safeDefaultIfKeyNotFound = true;
+        final boolean signupAllowed = settingsWrapper.isTrueForKey(SettingsServiceBean.Key.AllowSignUp.toString(), safeDefaultIfKeyNotFound);
         logger.fine("signup is allowed: " + signupAllowed);
 
         if (editMode == EditMode.CREATE && !signupAllowed) {
@@ -248,7 +250,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         
         if ( session.getUser().isAuthenticated() ) {
             currentUser = (AuthenticatedUser) session.getUser();
-            notificationsList = userNotificationService.findByUser(((AuthenticatedUser)currentUser).getId());
+            notificationsList = userNotificationService.findByUser(currentUser.getId());
             if (currentUser.isBuiltInUser()) {
                 builtinUser =  builtinUserService.findByUserName(currentUser.getUserIdentifier());
             }
@@ -282,22 +284,22 @@ public class BuiltinUserPage implements java.io.Serializable {
         return "";
     }
 
-    public void edit(ActionEvent e) {
+    public void edit(final ActionEvent e) {
         editMode = EditMode.EDIT;
     }
 
-    public void changePassword(ActionEvent e) {
+    public void changePassword(final ActionEvent e) {
         editMode = EditMode.CHANGE_PASSWORD;
     }
 
-    public void forgotPassword(ActionEvent e) {
+    public void forgotPassword(final ActionEvent e) {
         editMode = EditMode.FORGOT;
     }
 
-    public void validateUserName(FacesContext context, UIComponent toValidate, Object value) {
-        String userName = (String) value;
+    public void validateUserName(final FacesContext context, final UIComponent toValidate, final Object value) {
+        final String userName = (String) value;
         boolean userNameFound = false;
-        BuiltinUser user = builtinUserService.findByUserName(userName);
+        final BuiltinUser user = builtinUserService.findByUserName(userName);
         if (editMode == EditMode.CREATE) {
             if (user != null) {
                 userNameFound = true;
@@ -309,16 +311,16 @@ public class BuiltinUserPage implements java.io.Serializable {
         }
         if (userNameFound) {
             ((UIInput) toValidate).setValid(false);
-            FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.username.taken"), null);
+            final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.username.taken"), null);
             context.addMessage(toValidate.getClientId(context), message);
         }
     }
     
-    public void validateUserEmail(FacesContext context, UIComponent toValidate, Object value) {
-        String userEmail = (String) value;
+    public void validateUserEmail(final FacesContext context, final UIComponent toValidate, final Object value) {
+        final String userEmail = (String) value;
         boolean userEmailFound = false;
-        BuiltinUser user = builtinUserService.findByEmail(userEmail);
-        AuthenticatedUser aUser = authenticationService.getAuthenticatedUserByEmail(userEmail);
+        final BuiltinUser user = builtinUserService.findByEmail(userEmail);
+        final AuthenticatedUser aUser = authenticationService.getAuthenticatedUserByEmail(userEmail);
         if (editMode == EditMode.CREATE) {
             if (user != null || aUser != null) {
                 userEmailFound = true;
@@ -336,40 +338,40 @@ public class BuiltinUserPage implements java.io.Serializable {
         }
         if (userEmailFound) {
             ((UIInput) toValidate).setValid(false);
-            FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.email.taken"), null);
+            final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.email.taken"), null);
             context.addMessage(toValidate.getClientId(context), message);
         }
     }
     
 
-    public void validateUserNameEmail(FacesContext context, UIComponent toValidate, Object value) {
-        String userName = (String) value;
+    public void validateUserNameEmail(final FacesContext context, final UIComponent toValidate, final Object value) {
+        final String userName = (String) value;
         boolean userNameFound = false;
-        BuiltinUser user = builtinUserService.findByUserName(userName);
+        final BuiltinUser user = builtinUserService.findByUserName(userName);
         if (user != null) {
             userNameFound = true;
         } else {
-            BuiltinUser user2 = builtinUserService.findByEmail(userName);
+            final BuiltinUser user2 = builtinUserService.findByEmail(userName);
             if (user2 != null) {
                 userNameFound = true;
             }
         }
         if (!userNameFound) {
             ((UIInput) toValidate).setValid(false);
-            FacesMessage message = new FacesMessage("Username or Email is incorrect.");
+            final FacesMessage message = new FacesMessage("Username or Email is incorrect.");
             context.addMessage(toValidate.getClientId(context), message);
         }
     }
 
-    public void validateCurrentPassword(FacesContext context, UIComponent toValidate, Object value) {
+    public void validateCurrentPassword(final FacesContext context, final UIComponent toValidate, final Object value) {
         
-        String password = (String) value;
+        final String password = (String) value;
         
         if (StringUtils.isBlank(password)){
             logger.log(Level.WARNING, "current password is blank");
             
             ((UIInput) toValidate).setValid(false);
-            FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, 
+            final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, 
                 "Password Error", "Password is blank: re-type it again.");
             context.addMessage(toValidate.getClientId(context), message);
             return;
@@ -382,19 +384,19 @@ public class BuiltinUserPage implements java.io.Serializable {
         
         if ( ! PasswordEncryption.getVersion(builtinUser.getPasswordEncryptionVersion()).check(password, builtinUser.getEncryptedPassword()) ) {
             ((UIInput) toValidate).setValid(false);
-            FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Password Error", "Password is incorrect.");
+            final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Password Error", "Password is incorrect.");
             context.addMessage(toValidate.getClientId(context), message);
         }
     }
     
-    public void validateNewPassword(FacesContext context, UIComponent toValidate, Object value) {
-        String password = (String) value;
+    public void validateNewPassword(final FacesContext context, final UIComponent toValidate, final Object value) {
+        final String password = (String) value;
         if (StringUtils.isBlank(password)){
             logger.log(Level.WARNING, "new password is blank");
             
             ((UIInput) toValidate).setValid(false);
 
-            FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, 
+            final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, 
                 "Password Error", "The new password is blank: re-type it again");
             context.addMessage(toValidate.getClientId(context), message);
             return;
@@ -403,26 +405,26 @@ public class BuiltinUserPage implements java.io.Serializable {
             logger.log(Level.INFO, "new paswword is not blank");
         }
 
-        int minPasswordLength = 6;
-        boolean forceNumber = true;
-        boolean forceSpecialChar = false;
-        boolean forceCapitalLetter = false;
-        int maxPasswordLength = 255;
+        final int minPasswordLength = 6;
+        final boolean forceNumber = true;
+        final boolean forceSpecialChar = false;
+        final boolean forceCapitalLetter = false;
+        final int maxPasswordLength = 255;
 
-        PasswordValidator validator = PasswordValidator.buildValidator(forceSpecialChar, forceCapitalLetter, forceNumber, minPasswordLength, maxPasswordLength);
-        boolean passwordIsComplexEnough = password!= null && validator.validatePassword(password);
+        final PasswordValidator validator = PasswordValidator.buildValidator(forceSpecialChar, forceCapitalLetter, forceNumber, minPasswordLength, maxPasswordLength);
+        final boolean passwordIsComplexEnough = password!= null && validator.validatePassword(password);
         if (!passwordIsComplexEnough) {
             ((UIInput) toValidate).setValid(false);
-            String messageDetail = "Password is not complex enough. The password must have at least one letter, one number and be at least " + minPasswordLength + " characters in length.";
-            FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Password Error", messageDetail);
+            final String messageDetail = "Password is not complex enough. The password must have at least one letter, one number and be at least " + minPasswordLength + " characters in length.";
+            final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Password Error", messageDetail);
             context.addMessage(toValidate.getClientId(context), message);
         }
     }
     
     
 
-    public void updatePassword(String userName) {
-        String plainTextPassword = PasswordEncryption.generateRandomPassword();
+    public void updatePassword(final String userName) {
+        final String plainTextPassword = PasswordEncryption.generateRandomPassword();
         BuiltinUser user = builtinUserService.findByUserName(userName);
         if (user == null) {
             user = builtinUserService.findByEmail(userName);
@@ -442,8 +444,8 @@ public class BuiltinUserPage implements java.io.Serializable {
                 // just defensive coding: for in case when the validator is not
                 // working
                 logger.log(Level.WARNING, "inputPassword is still null");
-                FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.noPasswd"), null);
-                FacesContext context = FacesContext.getCurrentInstance();
+                final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.noPasswd"), null);
+                final FacesContext context = FacesContext.getCurrentInstance();
                 context.addMessage(null, message);
                 return null;
             }
@@ -451,18 +453,25 @@ public class BuiltinUserPage implements java.io.Serializable {
         builtinUser = builtinUserService.save(builtinUser);
 
         if (editMode == EditMode.CREATE) {
-            AuthenticatedUser au = authSvc.createAuthenticatedUser(
+            final AuthenticatedUser au = authSvc.createAuthenticatedUser(
                     new UserRecordIdentifier(BuiltinAuthenticationProvider.PROVIDER_ID, builtinUser.getUserName()),
                     builtinUser.getUserName(), builtinUser.getDisplayInfo(), false);
             if ( au == null ) {
                 // username exists
                 getUsernameField().setValid(false);
-                FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.username.taken"), null);
-                FacesContext context = FacesContext.getCurrentInstance();
+                final FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR, JH.localize("user.username.taken"), null);
+                final FacesContext context = FacesContext.getCurrentInstance();
                 context.addMessage(getUsernameField().getClientId(context), message);
                 return null;
             }
-            session.setUser(au);
+
+            // success message with email
+            JsfHelper.addSuccessMessage(
+                MessageFormat.format(BundleUtil.getStringFromBundle("user.create.success"), au.getEmail(),
+                ConfirmEmailUtil.friendlyExpirationTime(systemConfig.getMinutesUntilConfirmEmailTokenExpires())));
+
+            // remove automatically login
+            // session.setUser(au);
             userNotificationService.sendNotification(au,
                                                      new Timestamp(new Date().getTime()), 
                                                      UserNotification.Type.CREATEACC, null);
@@ -474,7 +483,7 @@ public class BuiltinUserPage implements java.io.Serializable {
             
             try {            
                 redirectPage = URLDecoder.decode(redirectPage, "UTF-8");
-            } catch (UnsupportedEncodingException ex) {
+            } catch (final UnsupportedEncodingException ex) {
                 Logger.getLogger(BuiltinUserPage.class.getName()).log(Level.SEVERE, null, ex);
                 redirectPage = "dataverse.xhtml&alias=" + dataverseService.findRootDataverse().getAlias();
             }
@@ -485,9 +494,9 @@ public class BuiltinUserPage implements java.io.Serializable {
             
             
         } else {
-            String emailBeforeUpdate = currentUser.getEmail();
-            AuthenticatedUser savedUser = authSvc.updateAuthenticatedUser(currentUser, builtinUser.getDisplayInfo());
-            String emailAfterUpdate = savedUser.getEmail();
+            final String emailBeforeUpdate = currentUser.getEmail();
+            final AuthenticatedUser savedUser = authSvc.updateAuthenticatedUser(currentUser, builtinUser.getDisplayInfo());
+            final String emailAfterUpdate = savedUser.getEmail();
             if (!emailBeforeUpdate.equals(emailAfterUpdate)) {
                 emailChanged = true;
             }
@@ -497,15 +506,15 @@ public class BuiltinUserPage implements java.io.Serializable {
                 msg = "Your account password has been successfully changed.";
             }
             if (emailChanged) {
-                ConfirmEmailUtil confirmEmailUtil = new ConfirmEmailUtil();
-                String expTime = confirmEmailUtil.friendlyExpirationTime(systemConfig.getMinutesUntilConfirmEmailTokenExpires());
+                final String expTime =
+                    ConfirmEmailUtil.friendlyExpirationTime(systemConfig.getMinutesUntilConfirmEmailTokenExpires());
                 msg = msg + " Your email address has changed and must be re-verified. Please check your inbox at " + currentUser.getEmail() + " and follow the link we've sent. \n\nAlso, please note that the link will only work for the next " + expTime + " before it has expired.";
-                boolean sendEmail = true;
+                final boolean sendEmail = true;
                 // delete unexpired token, if it exists (clean slate)
                 confirmEmailService.deleteTokenForUser(currentUser);
                 try {
-                    ConfirmEmailInitResponse confirmEmailInitResponse = confirmEmailService.beginConfirm(currentUser);
-                } catch (ConfirmEmailException ex) {
+                    final ConfirmEmailInitResponse confirmEmailInitResponse = confirmEmailService.beginConfirm(currentUser);
+                } catch (final ConfirmEmailException ex) {
                     logger.info("Unable to send email confirmation link to user id " + savedUser.getId());
                 }
                 session.setUser(currentUser);
@@ -526,15 +535,15 @@ public class BuiltinUserPage implements java.io.Serializable {
         return null;
     }
 
-    public void submit(ActionEvent e) {
+    public void submit(final ActionEvent e) {
         updatePassword(builtinUser.getUserName());
         editMode = null;
     }
 
-    public String remove(Long notificationId) {
-        UserNotification userNotification = userNotificationService.find(notificationId);
+    public String remove(final Long notificationId) {
+        final UserNotification userNotification = userNotificationService.find(notificationId);
         userNotificationService.delete(userNotification);
-        for (UserNotification uNotification : notificationsList) {
+        for (final UserNotification uNotification : notificationsList) {
             if (uNotification.getId() == userNotification.getId()) {
                 notificationsList.remove(uNotification);
                 break;
@@ -543,7 +552,7 @@ public class BuiltinUserPage implements java.io.Serializable {
         return null;
     }
 
-    public void onTabChange(TabChangeEvent event) {
+    public void onTabChange(final TabChangeEvent event) {
         if (event.getTab().getId().equals("notifications")) {
             displayNotification();
         }
@@ -552,18 +561,18 @@ public class BuiltinUserPage implements java.io.Serializable {
         }
     }
     
-    private String getRoleStringFromUser(AuthenticatedUser au, DvObject dvObj) {
+    private String getRoleStringFromUser(final AuthenticatedUser au, final DvObject dvObj) {
         // Find user's role(s) for given dataverse/dataset
-        Set<RoleAssignment> roles = permissionService.assignmentsFor(au, dvObj);
-        List<String> roleNames = new ArrayList();
+        final Set<RoleAssignment> roles = permissionService.assignmentsFor(au, dvObj);
+        final List<String> roleNames = new ArrayList();
 
         // Include roles derived from a user's groups
-        Set<Group> groupsUserBelongsTo = groupService.groupsFor(au, dvObj);
-        for (Group g : groupsUserBelongsTo) {
+        final Set<Group> groupsUserBelongsTo = groupService.groupsFor(au, dvObj);
+        for (final Group g : groupsUserBelongsTo) {
             roles.addAll(permissionService.assignmentsFor(g, dvObj));
         }
 
-        for (RoleAssignment ra : roles) {
+        for (final RoleAssignment ra : roles) {
             roleNames.add(ra.getRole().getName());
         }
         if (roleNames.isEmpty()){
@@ -573,22 +582,22 @@ public class BuiltinUserPage implements java.io.Serializable {
     }
 
     public void displayNotification() {
-        for (UserNotification userNotification : notificationsList) {
+        for (final UserNotification userNotification : notificationsList) {
             switch (userNotification.getType()) {
                 case ASSIGNROLE:   
                 case REVOKEROLE:
                     // Can either be a dataverse or dataset, so search both
-                    Dataverse dataverse = dataverseService.find(userNotification.getObjectId());
+                    final Dataverse dataverse = dataverseService.find(userNotification.getObjectId());
                     if (dataverse != null) {
                         userNotification.setRoleString(this.getRoleStringFromUser(this.getCurrentUser(), dataverse ));
                         userNotification.setTheObject(dataverse);
                     } else {
-                        Dataset dataset = datasetService.find(userNotification.getObjectId());
+                        final Dataset dataset = datasetService.find(userNotification.getObjectId());
                         if (dataset != null){
                             userNotification.setRoleString(this.getRoleStringFromUser(this.getCurrentUser(), dataset ));
                             userNotification.setTheObject(dataset);
                         } else {
-                            DataFile datafile = fileService.find(userNotification.getObjectId());
+                            final DataFile datafile = fileService.find(userNotification.getObjectId());
                             userNotification.setRoleString(this.getRoleStringFromUser(this.getCurrentUser(), datafile ));
                             userNotification.setTheObject(datafile);
                         }
@@ -599,7 +608,7 @@ public class BuiltinUserPage implements java.io.Serializable {
                     break;
  
                 case REQUESTFILEACCESS:
-                    DataFile file = fileService.find(userNotification.getObjectId());
+                    final DataFile file = fileService.find(userNotification.getObjectId());
                     userNotification.setTheObject(file.getOwner());
                     break;
                 case GRANTFILEACCESS:
@@ -629,16 +638,15 @@ public class BuiltinUserPage implements java.io.Serializable {
     
     public void sendConfirmEmail() {
         logger.fine("called sendConfirmEmail()");
-        String userEmail = currentUser.getEmail();
-        ConfirmEmailUtil confirmEmailUtil = new ConfirmEmailUtil();
+        final String userEmail = currentUser.getEmail();
         
         try {
             confirmEmailService.beginConfirm(currentUser);
-            List<String> args = Arrays.asList(
+            final List<String> args = Arrays.asList(
                     userEmail,
-                    confirmEmailUtil.friendlyExpirationTime(systemConfig.getMinutesUntilConfirmEmailTokenExpires()));
+                ConfirmEmailUtil.friendlyExpirationTime(systemConfig.getMinutesUntilConfirmEmailTokenExpires()));
             JsfHelper.addSuccessMessage(BundleUtil.getStringFromBundle("confirmEmail.submitRequest.success", args));
-        } catch (ConfirmEmailException ex) {
+        } catch (final ConfirmEmailException ex) {
             Logger.getLogger(BuiltinUserPage.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -667,7 +675,7 @@ public class BuiltinUserPage implements java.io.Serializable {
     }
     
     public boolean isEmailGrandfathered() {
-        ConfirmEmailUtil confirmEmailUtil = new ConfirmEmailUtil();
+        final ConfirmEmailUtil confirmEmailUtil = new ConfirmEmailUtil();
         if (currentUser.getEmailConfirmed() == confirmEmailUtil.getGrandfatheredTime()) {
             return true;
         } else return false;

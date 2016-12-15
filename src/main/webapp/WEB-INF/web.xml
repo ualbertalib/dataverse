@@ -37,6 +37,17 @@
         </param-name>
         <param-value>true</param-value>
     </context-param>
+    <!-- Primefaces reCAPTCHA -->
+    <context-param>
+        <param-name>primefaces.PRIVATE_CAPTCHA_KEY</param-name>
+<!--         <param-value>${captcha-private-key}</param-value> -->
+        <param-value>6LdKffISAAAAAI6wnPk9qG4S-Ym7LhhRctSTcxfx</param-value>
+    </context-param>
+    <context-param>
+        <param-name>primefaces.PUBLIC_CAPTCHA_KEY</param-name>
+<!--         <param-value>${captcha-public-key}</param-value> -->
+        <param-value>6LdKffISAAAAAEapEI4fSgvjENgXkMmYaQwiF-8B</param-value>
+    </context-param>
     <!-- JSF mapping -->
     <filter>
         <filter-name>Router</filter-name>

@@ -524,6 +524,17 @@
                                 <!-- Terms of Use -->
                                     <ui:include src="termsofuse.xhtml"/>
                                 </ui:fragment>
+                                <div class="form-group" jsf:rendered="#{DataverseUserPage.editMode == 'CREATE'}">
+                                <!-- reCAPTCHA -->
+                                    <label for="position" class="col-sm-3 control-label">
+                                    </label>
+                                    <div class="col-sm-9">
+                                        <p:panelGrid columns="2" styleClass="noBorders">
+                                            <p:captcha id="captcha" requiredMessage="#{bundle['user.recaptcha.required']}"/>
+                                            <p:message for="captcha" display="text" />
+                                        </p:panelGrid>
+                                    </div>
+                                </div>
                                 <div class="form-group">
                                     <div class="col-sm-12 button-block">
                                         <p:commandButton id="save" styleClass="btn btn-default" tabindex="9" value="#{DataverseUserPage.editMode == 'CREATE' ? bundle['user.createBtn']:bundle.saveChanges}" action="#{DataverseUserPage.save}" update="@form,:messagePanel,:userDisplayInfoTitle" />

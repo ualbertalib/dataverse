@@ -1,0 +1,92 @@
+<codeBook xmlns="ddi:codebook:2_5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="ddi:codebook:2_5 http://www.ddialliance.org/Specification/DDI-Codebook/2.5/XMLSchema/codebook.xsd"
+    version="2.5">
+    <docDscr>
+        <citation>
+            <titlStmt>
+                <titl>Replication data for: Measuring the difference between white voting and polling on interracial
+                    marriage.</titl>
+                <IDNo agency="handle">hdl:1902.1/10.1017_S1742058X06060218</IDNo>
+            </titlStmt>
+            <distStmt>
+                <distrbtr>Harvard Dataverse</distrbtr>
+                <distDate>2012-03-20</distDate>
+            </distStmt>
+            <verStmt source="DVN">
+                <version date="2016-12-07" type="RELEASED">2</version>
+            </verStmt>
+            <biblCit>Micah Altman; Phillip A. Klinkner, 2012, "Replication data for: Measuring the difference between
+                white voting and polling on interracial marriage.", hdl:1902.1/10.1017_S1742058X06060218, Harvard
+                Dataverse, V2</biblCit>
+        </citation>
+    </docDscr>
+    <stdyDscr>
+        <citation>
+            <titlStmt>
+                <titl>Replication data for: Measuring the difference between white voting and polling on interracial
+                    marriage.</titl>
+                <IDNo agency="handle">hdl:1902.1/10.1017_S1742058X06060218</IDNo>
+            </titlStmt>
+            <rspStmt>
+                <AuthEnty affiliation="Harvard U.">Micah Altman</AuthEnty>
+                <AuthEnty affiliation="Hamilton U.">Phillip A. Klinkner</AuthEnty>
+            </rspStmt>
+            <prodStmt>
+                <producer URI="http://mcahaltman.com">Micah Altman</producer>
+                <prodDate>2006</prodDate>
+            </prodStmt>
+            <distStmt>
+                <distrbtr>Harvard Dataverse</distrbtr>
+                <distDate>2012-03-20</distDate>
+            </distStmt>
+        </citation>
+        <stdyInfo>
+            <subject>
+                <keyword>elections</keyword>
+                <keyword>racism</keyword>
+                <keyword>survey</keyword>
+                <keyword>ecological inference</keyword>
+            </subject>
+            <abstract>Major questions remain about the extent and political significance of White racial attitudes. In
+                this paper, we examine an alternative source of data on racial attitudes -- actual voting on the purely
+                symbolic repeal of antimiscegenation referenda. By applying cross-level (ecological) inference methods
+                to this unique data, we find, surprisingly, that White voting behavior differs dramatically from what
+                would be predicted based on previous survey research on public and private attitudes. This data provides
+                all data necessary to replicate the article "MEASURING THE DIFFERENCE BETWEEN WHITE VOTING AND POLLING
+                ON INTERRACIAL MARRIAGE", and comprises a pre-election survey of Alabama adults, conducted by USA
+                Polling Group, on behalf fo the authors, precinct level election data, and an extract from the 2004
+                cumulative Generual Social Survey</abstract>
+            <sumDscr>
+                <timePrd cycle="P1" event="start" date="2004">2004</timePrd>
+                <timePrd cycle="P1" event="end" date="2004">2004</timePrd>
+                <nation>United States</nation>
+                <geogCover>South Carolina, Alabama</geogCover>
+            </sumDscr>
+            <relPubl>Altman, M.; Klinkner, P. A.. (2006). Measuring the difference between white voting and polling on
+                interracial marriage. Du Bois Review, 3(2), 299-315, doi, 10.1017/S1742058X06060218,
+                http://dx.doi.org/10.1017/S1742058X06060218</relPubl>
+            <distrbtr>
+                <distrbtr URI="http://dvn.iq.harvard.edu">IQSS Dataverse Network</distrbtr>
+            </distrbtr>
+            <depDate>2007</depDate>
+            <relStdy>National Opinion Research Center [NORC], 1/2/2006 10:34:13 AM, "National Opinion Research Center
+                General Social Survey 1972-2004", http://hdl.handle.net/1902.4/USNORCGSS1972-2004 Roper Center for
+                Public Opinion Research [Distributor] V1 [Version]</relStdy>
+        </stdyInfo>
+        <method>
+            <dataColl />
+            <anlyInfo />
+        </method>
+        <useStmt>CC0 Waiver</useStmt>
+    </stdyDscr>
+    <otherMat ID="f2409065" URI="https://dataverse.harvard.edu/api/access/datafile/2409065" level="datafile">
+        <labl>altman_klinkner_replication_5.zip</labl>
+        <txt>All Original Data Files</txt>
+        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type">application/octet-stream</notes>
+    </otherMat>
+    <otherMat ID="f2409066" URI="https://dataverse.harvard.edu/api/access/datafile/2409066" level="datafile">
+        <labl>altman_klinkner_replication_codebook_7.pdf</labl>
+        <txt>Documentation</txt>
+        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type">application/pdf</notes>
+    </otherMat>
+</codeBook>
