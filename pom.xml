@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.harvard.iq</groupId>
     <artifactId>dataverse</artifactId>
     <version>4.5.1</version>
     <packaging>war</packaging>
-
     <name>dataverse</name>
+    <scm>
+        <url>https://pcharoen@bitbucket.org/pcharoen/dataverse.git</url>
+        <connection>scm:git:https://pcharoen@bitbucket.org/pcharoen/dataverse.git</connection>
+        <developerConnection>scm:git:https://pcharoen@bitbucket.org/pcharoen/dataverse.git</developerConnection>
+    </scm>
 
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
@@ -21,7 +26,8 @@
             <url>http://repository.primefaces.org</url>
             <layout>default</layout>
         </repository>
-        <!-- Geo Toolkit repository is need to obtain the JAI (advanced imaging) libraries; since Oracle kind of abandoned that project, the jars seem to have disappeared from the central repository as well. -->
+        <!-- Geo Toolkit repository is need to obtain the JAI (advanced imaging) libraries; since Oracle kind of abandoned 
+            that project, the jars seem to have disappeared from the central repository as well. -->
         <repository>
             <id>geotk-repo</id>
             <name>Geo Toolkit Maven Repository</name>
@@ -83,14 +89,9 @@
         <dependency>
             <groupId>org.swordapp</groupId>
             <artifactId>sword2-server</artifactId>
-            <!--
-            Built from https://github.com/IQSS/swordv2-java-server-library
-            to return a proper SWORD error message rather than a Glassfish
-            Exception per https://github.com/IQSS/dataverse/issues/893
-            If the fix is merged upstream at
-            https://github.com/swordapp/JavaServer2.0/issues/6
-            we can switch back to the official SWORD library.
-            -->
+            <!-- Built from https://github.com/IQSS/swordv2-java-server-library to return a proper SWORD error message rather 
+                than a Glassfish Exception per https://github.com/IQSS/dataverse/issues/893 If the fix is merged upstream at https://github.com/swordapp/JavaServer2.0/issues/6 
+                we can switch back to the official SWORD library. -->
             <version>1.1-SNAPSHOT</version>
             <type>war</type>
         </dependency>
@@ -215,7 +216,7 @@
             <artifactId>handle</artifactId>
             <version>2006-06-16-generated</version>
         </dependency>
-        <!-- UNF v5 (buggy), (temporarily) added for testing ingest against DVN v3  - L.A. -->
+        <!-- UNF v5 (buggy), (temporarily) added for testing ingest against DVN v3 - L.A. -->
         <dependency>
             <groupId>edu.harvard.iq.dvn</groupId>
             <artifactId>unf5</artifactId>
@@ -374,27 +375,27 @@
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
         </dependency>
-	<!-- EXPERIMENTAL: -->
-	<!-- lyncode xoai OAI-PMH implementation: -->
-	<!-- unfortunately, their 4.10 version -->
-	<!-- is still buggy. As an experiment, I'm using -->
-	<!-- a patched version I built locally. -->
-	<!-- (pull requests pending - L.A. -->
-	<dependency>
-	  <groupId>com.lyncode</groupId>
-	  <artifactId>xoai-common</artifactId>
-	  <version>4.1.0-header-patch</version>
-	</dependency>
-	<dependency>
-	  <groupId>com.lyncode</groupId>
-	  <artifactId>xoai-data-provider</artifactId>
-	  <version>4.1.0-header-patch</version>
-	</dependency>
+        <!-- EXPERIMENTAL: -->
+        <!-- lyncode xoai OAI-PMH implementation: -->
+        <!-- unfortunately, their 4.10 version -->
+        <!-- is still buggy. As an experiment, I'm using -->
+        <!-- a patched version I built locally. -->
+        <!-- (pull requests pending - L.A. -->
         <dependency>
-	  <groupId>com.lyncode</groupId>
-	  <artifactId>xoai-service-provider</artifactId>
-	  <version>4.1.0-header-patch</version>
-	</dependency>
+            <groupId>com.lyncode</groupId>
+            <artifactId>xoai-common</artifactId>
+            <version>4.1.0-header-patch</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lyncode</groupId>
+            <artifactId>xoai-data-provider</artifactId>
+            <version>4.1.0-header-patch</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lyncode</groupId>
+            <artifactId>xoai-service-provider</artifactId>
+            <version>4.1.0-header-patch</version>
+        </dependency>
         <!-- Added for AutoService -->
         <dependency>
             <groupId>com.google.auto.service</groupId>
@@ -455,13 +456,16 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <version>2.3</version>
                 <configuration>
-		    <attachClasses>true</attachClasses>
+                    <attachClasses>true</attachClasses>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                     <archive>
                         <manifest>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
+                        <manifestEntries>
+                            <!-- add buildNumber to /META-INF/MANIFAST.MF -->
+                            <Implementation-Build>${buildNumber}</Implementation-Build>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
@@ -518,6 +522,23 @@
                 <groupId>org.eluder.coveralls</groupId>
                 <artifactId>coveralls-maven-plugin</artifactId>
                 <version>4.0.0</version>
+            </plugin>
+            <!-- create git commit id buildNumber -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                        <configuration>
+                            <shortRevisionLength>7</shortRevisionLength>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
