@@ -1,6 +1,8 @@
-<codeBook xmlns="ddi:codebook:2_5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="ddi:codebook:2_5 http://www.ddialliance.org/Specification/DDI-Codebook/2.5/XMLSchema/codebook.xsd"
-    version="2.5">
+<?xml version='1.0' encoding='UTF-8'?>
+<codeBook xmlns="http://www.icpsr.umich.edu/DDI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.icpsr.umich.edu/DDI http://www.icpsr.umich.edu/DDI/Version2-0.xsd"
+    version="2.0" source="DVN_3_0">
     <docDscr>
         <citation>
             <titlStmt>
@@ -9,15 +11,32 @@
                 <IDNo agency="DOI">doi:10.7939/DVN/10167</IDNo>
             </titlStmt>
             <distStmt>
-                <distrbtr>Root Dataverse</distrbtr>
-                <distDate>2014-09-18</distDate>
+                <distrbtr>UAL Dataverse Network</distrbtr>
+                <distDate date="2014-09-19">2014-09-19</distDate>
             </distStmt>
             <verStmt source="DVN">
                 <version date="2014-09-19" type="RELEASED">3</version>
+                <verResp>llaliber</verResp>
             </verStmt>
-            <biblCit>Laliberte, L.W., 2014, "315: Edmonton sheet, west of fourth meridian, Alberta.
-                -- 9th ed. rev. to the 1st of Sept. 1915.", doi:10.7939/DVN/10167, Root Dataverse,
-                V3</biblCit>
+            <verStmt source="DVN">
+                <version date="2014-09-18" type="ARCHIVED">2</version>
+                <verResp>llaliber</verResp>
+                <notes type="DVN:ARCHIVE_NOTE" subject="Archive Note">Replaced by version 3</notes>
+                <notes type="DVN:ARCHIVE_DATE" subject="Archive Date">2014-09-19</notes>
+            </verStmt>
+            <verStmt source="DVN">
+                <version date="2014-09-18" type="ARCHIVED">1</version>
+                <verResp>llaliber</verResp>
+                <notes type="DVN:VERSION_NOTE" subject="Version Note">08/18/2014</notes>
+                <notes type="DVN:ARCHIVE_NOTE" subject="Archive Note">Replaced by version 2</notes>
+                <notes type="DVN:ARCHIVE_DATE" subject="Archive Date">2014-09-18</notes>
+            </verStmt>
+            <biblCit format="DVN">Laliberte, L.W., 2014, "315: Edmonton sheet, west of fourth
+                meridian, Alberta. -- 9th ed. rev. to the 1st of Sept. 1915.",
+                http://dx.doi.org/10.7939/DVN/10167 University of Alberta Libraries [Distributor] V3
+                [Version]</biblCit>
+            <holdings
+                URI="http://zk-dev3.library.ualberta.ca/dvn/study?globalId=doi:10.7939/DVN/10167"/>
         </citation>
     </docDscr>
     <stdyDscr>
@@ -32,13 +51,18 @@
             </rspStmt>
             <prodStmt>
                 <producer>University of Alberta Libraries</producer>
-                <prodDate>2014</prodDate>
+                <prodDate date="2014">2014</prodDate>
                 <prodPlac>Edmonton</prodPlac>
+                <software version="10.1">ArcGIS</software>
             </prodStmt>
             <distStmt>
-                <distrbtr>Root Dataverse</distrbtr>
-                <distDate>2014-09-18</distDate>
+                <distrbtr abbr="UAL">University of Alberta Libraries</distrbtr>
+                <contact email="llaliber@ualberta.ca" affiliation="UAL">Larry Laliberte</contact>
+                <depDate date="2014-09-18">2014-09-18</depDate>
             </distStmt>
+            <verStmt source="DVN">
+                <version date="2014-09-19" type="RELEASED">3</version>
+            </verStmt>
         </citation>
         <stdyInfo>
             <subject>
@@ -49,89 +73,101 @@
                 <keyword>Topographic</keyword>
                 <topcClas>Western Canada</topcClas>
             </subject>
-            <abstract>This .shp file (lines) is the result of georeferencing and performing a raster
-                to vector conversion using esri's ArcScan of Sheet 315: Edmonton, Alberta, 9th ed.
-                rev. to the 1st of September, 1915. This sheet is part of the 3-mile to 1-inch
-                sectional maps of Western Canada. vectorization was undertaken to extract a measure
-                of line work density in order to measure "ÂCartographic Intactness"Â. The original
-                georeferenced scan, and world file of the original map, published by the Department
-                of the Interior, is included in the study for reference purposes.</abstract>
+            <abstract date="2014">This .shp file (lines) is the result of georeferencing and
+                performing a raster to vector conversion using esri's ArcScan of Sheet 315:
+                Edmonton, Alberta, 9th ed. rev. to the 1st of September, 1915. This sheet is part of
+                the 3-mile to 1-inch sectional maps of Western Canada. vectorization was undertaken
+                to extract a measure of line work density in order to measure "ÂCartographic
+                Intactness"Â. The original georeferenced scan, and world file of the original map,
+                published by the Department of the Interior, is included in the study for reference
+                purposes. </abstract>
             <sumDscr>
-                <dataKind>Geospatial Data</dataKind>
                 <nation>Canada</nation>
-                <northBL>53.894</northBL>
-                <eastBL>-112.052</eastBL>
-                <southBL>53.192</southBL>
-                <westBL>-114.03</westBL>
+                <geoBndBox>
+                    <westBL>-114.03</westBL>
+                    <eastBL>-112.052</eastBL>
+                    <southBL>53.192</southBL>
+                    <northBL>53.894</northBL>
+                </geoBndBox>
                 <universe>Western Canada</universe>
+                <dataKind>Geospatial Data</dataKind>
             </sumDscr>
-            <distrbtr><distrbtr abbr="UAL">University of Alberta Libraries</distrbtr></distrbtr>
-            <contact affiliation="UAL" email="llaliber@ualberta.ca">Larry Laliberte</contact>
-            <depDate>2014-09-18</depDate>
+        </stdyInfo>
+        <dataAccs>
+            <notes level="dvn" type="DVN:TOU" subject="Terms Of Use">&lt;h3 > UAL Dataverse Network
+                Data Use Terms &lt;/h3> &lt;br/> &lt;p> By downloading these Materials, I agree to
+                the following: &lt;/p> &lt;ol> &lt;li > &lt;p > I will not use the Materials to
+                &lt;/p> &lt;/li> &lt;ol> &lt;li > &lt;p > obtain information that could directly or
+                indirectly identify subjects. &lt;/p> &lt;/li> &lt;li > &lt;p > produce links among
+                the Distributor's datasets or among the Distributor's data and other datasets that
+                could identify individuals or organizations. &lt;/p> &lt;/li> &lt;li > &lt;p >
+                obtain information about, or further contact with, subjects known to me except where
+                the use and/or release of such identifying information has no potential for
+                constituting an unwarranted invasion of privacy and/or breach of confidentiality.
+                &lt;/p> &lt;/li> &lt;/ol> &lt;li > &lt;p > I agree not to download any Materials
+                where prohibited by applicable law. &lt;/p> &lt;/li> &lt;li > &lt;p > I agree not to
+                use the Materials in any way prohibited by applicable law. &lt;/p> &lt;/li> &lt;li >
+                &lt;p > I agree that any books, articles, conference papers, theses, dissertations,
+                reports, or other publications that I create which employ data reference the
+                bibliographic citation accompanying this data. These citations include the data
+                authors, data identifier, and other information accord with the Recommended Standard
+                (http://thedata.org/citation/standard) for social science data. &lt;/p> &lt;/li>
+                &lt;li > &lt;p > THE DISTRIBUTOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, BY
+                OPERATION OF LAW OR OTHERWISE, REGARDING OR RELATING TO THE DATASET &lt;/p> &lt;/li>
+                &lt;/ol></notes>
+        </dataAccs>
+        <othrStdyMat>
             <relMat>Dubreuil, Lorraine. Sectional maps of western Canada, 1871-1955 : an early
                 Canadian topographic map series. Occasional papers of the Association of Canadian
                 Map Libraries and Archives; no. 2. 1989.</relMat>
-            <software version="10.1">10.1</software>
-        </stdyInfo>
-        <method>
-            <dataColl/>
-            <anlyInfo/>
-        </method>
+        </othrStdyMat>
     </stdyDscr>
-    <otherMat ID="f1579" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1579"
-        level="datafile">
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_clip.zip?fileId=783">
         <labl>S_315_1915_clip.zip</labl>
         <txt>This zip file contains the georeferenced image and corresponding world file.</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/zip</notes>
+        <notes type="vdc:category">Georeferenced_Image</notes>
     </otherMat>
-    <otherMat ID="f1571" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1571"
-        level="datafile">
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_lines.dbf?fileId=775">
         <labl>S_315_1915_lines.dbf</labl>
         <txt>Shapefile attribute format</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/octet-stream</notes>
+        <notes type="vdc:category">Geospatial_Data</notes>
     </otherMat>
-    <otherMat ID="f1575" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1575"
-        level="datafile">
-        <labl>S_315_1915_lines.prj</labl>
-        <txt>Shapefile projection format</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type">text/plain;
-            charset=US-ASCII</notes>
-    </otherMat>
-    <otherMat ID="f1573" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1573"
-        level="datafile">
-        <labl>S_315_1915_lines.sbn</labl>
-        <txt>Shapefile spatial index format</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/octet-stream</notes>
-    </otherMat>
-    <otherMat ID="f1574" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1574"
-        level="datafile">
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_lines.sbx?fileId=778">
         <labl>S_315_1915_lines.sbx</labl>
         <txt>Shapefile spatial index format</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/octet-stream</notes>
+        <notes type="vdc:category">Geospatial_Data</notes>
     </otherMat>
-    <otherMat ID="f1572" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1572"
-        level="datafile">
-        <labl>S_315_1915_lines.shp</labl>
-        <txt>Shapefile shape format</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/octet-stream</notes>
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_lines.prj?fileId=779">
+        <labl>S_315_1915_lines.prj</labl>
+        <txt>Shapefile projection format</txt>
+        <notes type="vdc:category">Geospatial_Data</notes>
     </otherMat>
-    <otherMat ID="f1570" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1570"
-        level="datafile">
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_lines.sbn?fileId=777">
+        <labl>S_315_1915_lines.sbn</labl>
+        <txt>Shapefile spatial index format</txt>
+        <notes type="vdc:category">Geospatial_Data</notes>
+    </otherMat>
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_lines.shx?fileId=774">
         <labl>S_315_1915_lines.shx</labl>
         <txt>Shapefile spatial index format</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/octet-stream</notes>
+        <notes type="vdc:category">Geospatial_Data</notes>
     </otherMat>
-    <otherMat ID="f1578" URI="http://zk-dev3.library.ualberta.ca:8080/api/access/datafile/1578"
-        level="datafile">
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915_lines.shp?fileId=776">
+        <labl>S_315_1915_lines.shp</labl>
+        <txt>Shapefile shape format</txt>
+        <notes type="vdc:category">Geospatial_Data</notes>
+    </otherMat>
+    <otherMat level="study"
+        URI="http://zk-dev3.library.ualberta.ca/dvn/dv/3m1i/FileDownload/S_315_1915.zip?fileId=782">
         <labl>S_315_1915.zip</labl>
         <txt>The original non georeferenced 300 dpi .tif map scan.</txt>
-        <notes level="file" type="DATAVERSE:CONTENTTYPE" subject="Content/MIME Type"
-            >application/zip</notes>
+        <notes type="vdc:category">Original_Scan</notes>
     </otherMat>
 </codeBook>
