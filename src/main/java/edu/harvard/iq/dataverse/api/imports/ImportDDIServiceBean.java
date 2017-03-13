@@ -1228,9 +1228,10 @@ public class ImportDDIServiceBean {
 
                 } else if (xmlr.getLocalName().equals("contact")) {
                     final HashSet<FieldDTO> set = new HashSet<>();
-                    addToSet(set, "datasetContactEmail", xmlr.getAttributeValue(null, "email"));
-                    addToSet(set, "datasetContactAffiliation", xmlr.getAttributeValue(null, "affiliation"));
-                    addToSet(set, "datasetContactName", parseText(xmlr));
+                    // XXX: #46 - Check that distributorContactEmail is mapped to datasetContactEmail
+                    addToSet(set, "distributorContactEmail", xmlr.getAttributeValue(null, "email"));
+                    addToSet(set, "distributorContactAffiliation", xmlr.getAttributeValue(null, "affiliation"));
+                    addToSet(set, "distributorContactName", parseText(xmlr));
                     datasetContacts.add(set);
 
                 } else if (xmlr.getLocalName().equals("depositr")) {
@@ -1264,6 +1265,7 @@ public class ImportDDIServiceBean {
         final List<HashSet<FieldDTO>> producers = new ArrayList<>();
         final List<HashSet<FieldDTO>> grants = new ArrayList<>();
         final List<HashSet<FieldDTO>> software = new ArrayList<>();
+        final List<HashSet<FieldDTO>> fundAg = new ArrayList<>();
 
         for (int event = xmlr.next(); event != XMLStreamConstants.END_DOCUMENT; event = xmlr.next()) {
             if (event == XMLStreamConstants.START_ELEMENT) {
@@ -1287,16 +1289,19 @@ public class ImportDDIServiceBean {
                 } else if (xmlr.getLocalName().equals("software")) {
                     final HashSet<FieldDTO> set = new HashSet<>();
                     addToSet(set, "softwareVersion", xmlr.getAttributeValue(null, "version"));
-                    addToSet(set, "softwareName", xmlr.getAttributeValue(null, "version"));
+                    // XXX: #50 - Fix mapping for Software Name
+                    addToSet(set, "softwareName", parseText(xmlr));
                     if (!set.isEmpty()) {
                         software.add(set);
                     }
-
-                    // TODO: ask Gustavo "fundAg"?TO
                 } else if (xmlr.getLocalName().equals("fundAg")) {
-                    // XXX: add fundAg
-                    // save this in contributorName - member of compoundFieldContributor
-                    // metadata.setFundingAgency( parseText(xmlr) );
+                    // XXX: #45 - Map Funding Agency to Grant Agency
+                    final HashSet<FieldDTO> set = new HashSet<>();
+                    addToSet(set, "fundAgencyAbbr", xmlr.getAttributeValue(null, "abbr"));
+                    addToSet(set, "fundAgencyValue", parseText(xmlr));
+                    if (!set.isEmpty()) {
+                        fundAg.add(set);
+                    }
                 } else if (xmlr.getLocalName().equals("grantNo")) {
                     final HashSet<FieldDTO> set = new HashSet<>();
                     addToSet(set, "grantNumberAgency", xmlr.getAttributeValue(null, "agency"));
@@ -1304,7 +1309,6 @@ public class ImportDDIServiceBean {
                     if (!set.isEmpty()) {
                         grants.add(set);
                     }
-
                 }
             } else if (event == XMLStreamConstants.END_ELEMENT) {
                 if (xmlr.getLocalName().equals("prodStmt")) {
@@ -1316,6 +1320,9 @@ public class ImportDDIServiceBean {
                     }
                     if (producers.size() > 0) {
                         citation.getFields().add(FieldDTO.createMultipleCompoundFieldDTO("producer", producers));
+                    }
+                    if (fundAg.size() > 0) {
+                        citation.getFields().add(FieldDTO.createMultipleCompoundFieldDTO("fundAg", fundAg));
                     }
                     return;
                 }
