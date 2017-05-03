@@ -8,7 +8,7 @@ public class XmlPrinterTest {
     @Test
     public void testPrettyPrintXmlShort() {
         String xml = "<foo><bar>baz</bar></foo>";
-        String expResult = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        String expResult = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 + "<foo>\n"
                 + "  <bar>baz</bar>\n"
                 + "</foo>\n";
