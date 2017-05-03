@@ -824,25 +824,24 @@ public class DdiExportUtil {
             if ("citation".equals(key)) {
                 for (FieldDTO fieldDTO : value.getFields()) {
                     if (DatasetFieldConstant.grantNumber.equals(fieldDTO.getTypeName())) {
-                        String grantNumber = "";
-                        String grantAgency = "";
-                        for (HashSet<FieldDTO> foo : fieldDTO.getMultipleCompound()) {
-                            for (Iterator<FieldDTO> iterator = foo.iterator(); iterator.hasNext();) {
-                                FieldDTO next = iterator.next();
+                        for (final HashSet<FieldDTO> foo : fieldDTO.getMultipleCompound()) {
+                            String grantNumber = "";
+                            String grantAgency = "";
+                            for (final Iterator<FieldDTO> iterator = foo.iterator(); iterator.hasNext();) {
+                                // XXX: #45 - Map Funding Agency to Grant Agency, fix DDI Exporter
+                                final FieldDTO next = iterator.next();
                                 if (DatasetFieldConstant.grantNumberValue.equals(next.getTypeName())) {
-                                    grantNumber =  next.getSinglePrimitive();
+                                    grantNumber = next.getSinglePrimitive();
                                 }
                                 if (DatasetFieldConstant.grantNumberAgency.equals(next.getTypeName())) {
-                                    grantAgency =  next.getSinglePrimitive();
+                                    grantAgency = next.getSinglePrimitive();
                                 }
                             }
-                            if (!grantNumber.isEmpty()){
-                                xmlw.writeStartElement("grantNo"); 
-                                if(!grantAgency.isEmpty()){
-                                   writeAttribute(xmlw,"agency",grantAgency); 
-                                } 
+                            if (!grantAgency.isEmpty()) {
+                                xmlw.writeStartElement("grantNo");
+                                writeAttribute(xmlw, "agency", grantAgency); // grant/funding agency
                                 xmlw.writeCharacters(grantNumber);
-                                xmlw.writeEndElement(); //grantno
+                                xmlw.writeEndElement(); // grantno
                             }
                         }
                     }

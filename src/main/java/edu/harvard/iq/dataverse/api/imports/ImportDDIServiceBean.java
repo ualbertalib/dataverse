@@ -17,7 +17,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -1166,6 +1165,7 @@ public class ImportDDIServiceBean {
         List<HashSet<FieldDTO>> producers = new ArrayList<>();
         List<HashSet<FieldDTO>> grants = new ArrayList<>();
         List<HashSet<FieldDTO>> software = new ArrayList<>();
+        List<HashSet<FieldDTO>> fundAg = new ArrayList<>();
 
         for (int event = xmlr.next(); event != XMLStreamConstants.END_DOCUMENT; event = xmlr.next()) {
             if (event == XMLStreamConstants.START_ELEMENT) {
@@ -1185,17 +1185,21 @@ public class ImportDDIServiceBean {
                 } else if (xmlr.getLocalName().equals("prodPlac")) {
                     citation.getFields().add(FieldDTO.createPrimitiveFieldDTO("productionPlace", parseDate(xmlr, "prodPlac")));
                 } else if (xmlr.getLocalName().equals("software")) {
-                    HashSet<FieldDTO> set = new HashSet<>();
-                    addToSet(set,"softwareVersion", xmlr.getAttributeValue(null, "version"));
-                    addToSet(set,"softwareName", xmlr.getAttributeValue(null, "version"));
+                    final HashSet<FieldDTO> set = new HashSet<>();
+                    addToSet(set, "softwareVersion", xmlr.getAttributeValue(null, "version"));
+                    // XXX: #50 - Fix mapping for Software Name
+                    addToSet(set, "softwareName", parseText(xmlr));
                     if (!set.isEmpty()) {
                         software.add(set);
                     }
-
-                    //TODO: ask Gustavo "fundAg"?TO
                 } else if (xmlr.getLocalName().equals("fundAg")) {
-                    // save this in contributorName - member of compoundFieldContributor
-                    //    metadata.setFundingAgency( parseText(xmlr) );
+                    // XXX: #45 - Map Funding Agency to Grant Agency
+                    final HashSet<FieldDTO> set = new HashSet<>();
+                    addToSet(set, "grantNumberAgency", parseText(xmlr));
+                    addToSet(set, "grantNumberValue", "");
+                    if (!set.isEmpty()) {
+                        fundAg.add(set);
+                    }
                 } else if (xmlr.getLocalName().equals("grantNo")) {
                     HashSet<FieldDTO> set = new HashSet<>();
                     addToSet(set,"grantNumberAgency", xmlr.getAttributeValue(null, "agency"));
@@ -1207,13 +1211,16 @@ public class ImportDDIServiceBean {
                 }
             } else if (event == XMLStreamConstants.END_ELEMENT) {
                 if (xmlr.getLocalName().equals("prodStmt")) {
-                    if (software.size()>0) {
+                    if (software.size() > 0) {
                         citation.addField(FieldDTO.createMultipleCompoundFieldDTO("software", software));
                     }
-                    if (grants.size()>0) {
+                    if (grants.size() > 0) {
                         citation.addField(FieldDTO.createMultipleCompoundFieldDTO("grantNumber", grants));
-                    } 
-                    if (producers.size()>0) {
+                    }
+                    if (fundAg.size() > 0) {
+                        citation.addField(FieldDTO.createMultipleCompoundFieldDTO("grantNumber", fundAg));
+                    }
+                    if (producers.size() > 0) {
                         citation.getFields().add(FieldDTO.createMultipleCompoundFieldDTO("producer", producers));
                     }
                     return;

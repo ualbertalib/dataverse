@@ -12,6 +12,7 @@
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <build.version>4.5.1.1</build.version>
     </properties>
 
     <repositories>
@@ -406,6 +407,7 @@
     </dependencies>
 
     <build>
+        <finalName>${project.name}-${build.version}</finalName>
         <resources>
             <resource>
                 <directory>src/main/java</directory>
