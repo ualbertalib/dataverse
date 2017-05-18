@@ -22,6 +22,14 @@
                         <h:outputText value="#{bundle['error.404.message']} " escape="false"/>
                         <h:outputFormat value="#{bundle['error.support.message']}" escape="false">
                             <o:param>
+                            <h:outputLink value="https://docs.google.com/a/ualberta.ca/forms/d/e/1FAIpQLSc-Oe-VCUrGefVG8UUCejXenhfZqlPMG0PETxXJMPBZiHilKQ/viewform" target="_blank">
+                                #{bundle['contact.support']}
+                            </h:outputLink>
+                            </o:param>
+                        </h:outputFormat>
+                        <ui:remove>
+                        <h:outputFormat value="#{bundle['error.support.message']}" escape="false">
+                            <o:param>
                                 <p:commandLink value="#{bundle['contact.support']}" oncomplete="PF('contactForm').show()" update=":contactDialog" actionListener="#{sendFeedbackDialog.initUserInput}">
                                     <f:setPropertyActionListener target="#{sendFeedbackDialog.messageSubject}" value=""/>
                                     <f:setPropertyActionListener target="#{sendFeedbackDialog.recipient}" value="#{null}"/>
@@ -30,6 +38,7 @@
                                 </p:commandLink>                                
                             </o:param>
                         </h:outputFormat>   
+                        </ui:remove>
                     </o:form>                  
                 </div>                   
                 <div class="row text-center" jsf:rendered="#{!widgetWrapper.widgetView}">

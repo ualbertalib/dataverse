@@ -84,6 +84,12 @@
                                 </li>
                             </ul>
                         </li>
+                        <li>
+                            <h:outputLink value="https://docs.google.com/a/ualberta.ca/forms/d/e/1FAIpQLSc-Oe-VCUrGefVG8UUCejXenhfZqlPMG0PETxXJMPBZiHilKQ/viewform" target="_blank">
+                                #{bundle['header.support']}
+                            </h:outputLink>
+                        </li>
+                        <ui:remove>
                         <o:form useRequestURI="true" class="navbar-form navbar-left navbar-form-link">
                             <p:commandLink value="#{bundle['header.support']}" oncomplete="PF('contactForm').show()" update=":contactDialog" actionListener="#{sendFeedbackDialog.initUserInput}">
                                 <f:setPropertyActionListener target="#{sendFeedbackDialog.messageSubject}" value=""/>
@@ -92,6 +98,7 @@
                                 <f:setPropertyActionListener target="#{sendFeedbackDialog.userEmail}" value=""/>
                             </p:commandLink>
                         </o:form>
+                        </ui:remove>
                         <li jsf:rendered="#{dataverseSession.user.superuser}">
                             <h:outputLink value="/dashboard.xhtml?dataverseId=#{dataverseServiceBean.findRootDataverse().id}">
                                 <h:outputText value="#{bundle['header.dashboard']}" />

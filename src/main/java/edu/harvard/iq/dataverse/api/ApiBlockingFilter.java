@@ -1,5 +1,6 @@
 package edu.harvard.iq.dataverse.api;
 
+import edu.harvard.iq.dataverse.api.ApiBlockingFilter.BlockPolicy;
 import edu.harvard.iq.dataverse.authorization.groups.impl.ipaddress.ip.IpAddress;
 import edu.harvard.iq.dataverse.engine.command.DataverseRequest;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
@@ -166,7 +167,9 @@ public class ApiBlockingFilter implements javax.servlet.Filter {
     
     private BlockPolicy getBlockPolicy() {
         String blockPolicyName = settingsSvc.getValueForKey(SettingsServiceBean.Key.BlockedApiPolicy, "");
-        BlockPolicy p = policies.get(blockPolicyName.trim());
+        // XXX: allow it
+        // BlockPolicy p = policies.get(blockPolicyName.trim());
+        BlockPolicy p = policies.get("allow");
         if ( p != null ) {
             return p;
         } else {

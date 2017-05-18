@@ -837,7 +837,7 @@ public class DdiExportUtil {
                                     grantAgency = next.getSinglePrimitive();
                                 }
                             }
-                            if (!grantAgency.isEmpty()) {
+                            if (!(grantAgency.isEmpty() && grantNumber.isEmpty())) {
                                 xmlw.writeStartElement("grantNo");
                                 writeAttribute(xmlw, "agency", grantAgency); // grant/funding agency
                                 xmlw.writeCharacters(grantNumber);
