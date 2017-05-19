@@ -3,7 +3,6 @@
 --
 
 SET statement_timeout = 0;
-SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -232,7 +231,7 @@ INSERT INTO setting VALUES (':ApplicationTermsOfUse', '<strong>
 <h4>Termination</h4>
 <p>UAL may terminate your access to all or any part of the Service at any time, with or without cause, with or
     without notice, effective immediately. If you wish to terminate your account, you may notify UAL at
-    dataverse@ualberta.ca. All provisions of the Terms of Use which by their nature should survive termination shall
+    data@ualberta.ca. All provisions of the Terms of Use which by their nature should survive termination shall
     survive termination, including, without limitation, ownership provisions, warranty disclaimers, indemnity and
     limitations of liability.</p>
 <h4>No Warranties</h4>
@@ -314,7 +313,7 @@ INSERT INTO setting VALUES (':BlockedApiEndpoints', 'admin,builtin-users');
 INSERT INTO setting VALUES (':ShibEnabled', 'true');
 INSERT INTO setting VALUES (':TwoRavensTabularView', 'false');
 INSERT INTO setting VALUES (':Authority', '10.7939/DVN');
-INSERT INTO setting VALUES (':SystemEmail', 'UAL Dataverse <dataverse@ualberta.ca>');
+INSERT INTO setting VALUES (':SystemEmail', 'UAL Dataverse <data@ualberta.ca>');
 
 
 --
