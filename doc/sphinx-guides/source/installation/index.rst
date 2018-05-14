@@ -6,7 +6,7 @@
 Installation Guide
 ==================
 
-Contents:
+**Contents:**
 
 .. toctree::
 
@@ -15,7 +15,9 @@ Contents:
    prerequisites
    installation-main
    config
-   administration
    upgrading
    r-rapache-tworavens
+   geoconnect
    shibboleth
+   oauth2
+   external-tools
