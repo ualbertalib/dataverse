@@ -127,6 +127,7 @@ public class SearchFields {
     public static final String AFFILIATION = "affiliation_ss";
     public static final String FILE_NAME = "fileName";
     public static final String FILE_DESCRIPTION = "fileDescription";
+    public static final String FILE_PERSISTENT_ID = "filePersistentId";
     /**
      * Can be multivalued and includes both "friendly" and "group" versions:
      * "PNG Image", "image"
@@ -182,8 +183,9 @@ public class SearchFields {
      */
     public static final String TYPE = "dvObjectType";
     public static final String NAME_SORT = "nameSort";
-    public static final String PUBLICATION_DATE = "publicationDate";
-    public static final String RELEASE_OR_CREATE_DATE = "dateSort";
+    // PUBLICATION_YEAR used to be called PUBLICATION_DATE.
+    public static final String PUBLICATION_YEAR = "publicationDate";
+    public static final String RELEASE_OR_CREATE_DATE = "dateSort"; 
     /**
      * i.e. "Mar 17, 2015"
      */
@@ -222,8 +224,8 @@ public class SearchFields {
     public static final String DATASET_CITATION_HTML = "citationHtml";
     public static final String DATASET_DEACCESSION_REASON = "deaccessionReason";
     /**
-     * In contrast to PUBLICATION_DATE, this field applies only to datasets for
-     * more targeted results for just datasets. The format is YYYY (i.e.
+     * In contrast to PUBLICATION_YEAR, this field applies only to datasets for
+ more targeted results for just datasets. The format is YYYY (i.e.
      * "2015").
      */
     public static final String DATASET_PUBLICATION_DATE = "dsPublicationDate";

@@ -16,7 +16,11 @@ Data Capture Module (DCM) is an experimental component that allows users to uplo
 Install a DCM
 ~~~~~~~~~~~~~
 
-Installation instructions can be found at https://github.com/sbgrid/data-capture-module . Note that a shared filesystem between Dataverse and your DCM is required. You cannot use a DCM with non-filesystem storage options such as Swift.
+Installation instructions can be found at https://github.com/sbgrid/data-capture-module . Note that a shared filesystem (posix or AWS S3) between Dataverse and your DCM is required. You cannot use a DCM with Swift at this point in time.
+
+Please note that S3 support for DCM is highly experimental. Files can be uploaded to S3 but they cannot be downloaded until https://github.com/IQSS/dataverse/issues/4949 is worked on. If you want to play around with S3 support for DCM, you must configure a JVM option called ``dataverse.files.dcm-s3-bucket-name`` which is a holding area for uploaded files that have not yet passed checksum validation. Search for that JVM option at https://github.com/IQSS/dataverse/issues/4703 for commands on setting that JVM option and related setup. Note that because that GitHub issue has so many comments you will need to click "Load more" where it says "hidden items". FIXME: Document all of this properly.
+
+. FIXME: Explain what ``dataverse.files.dcm-s3-bucket-name`` is for and what it has to do with ``dataverse.files.s3-bucket-name``.
 
 Once you have installed a DCM, you will need to configure two database settings on the Dataverse side. These settings are documented in the :doc:`/installation/config` section of the Installation Guide:
 
@@ -87,7 +91,7 @@ Add Dataverse settings to use mock (same as using DCM, noted above):
 - ``curl http://localhost:8080/api/admin/settings/:DataCaptureModuleUrl -X PUT -d "http://localhost:5000"``
 - ``curl http://localhost:8080/api/admin/settings/:UploadMethods -X PUT -d "dcm/rsync+ssh"``
 
-At this point you should be able to download a placeholder rsync script. Dataverse is then waiting for new from the DCM about if checksum validation has succeeded or not. First, you have to put files in place, which is usually the job of the DCM. You should substitute "X1METO" for the "identifier" of the dataset you create. You must also use the proper path for where you store files in your dev environment.
+At this point you should be able to download a placeholder rsync script. Dataverse is then waiting for news from the DCM about if checksum validation has succeeded or not. First, you have to put files in place, which is usually the job of the DCM. You should substitute "X1METO" for the "identifier" of the dataset you create. You must also use the proper path for where you store files in your dev environment.
 
 - ``mkdir /usr/local/glassfish4/glassfish/domains/domain1/files/10.5072/FK2/X1METO``
 - ``mkdir /usr/local/glassfish4/glassfish/domains/domain1/files/10.5072/FK2/X1METO/X1METO``
@@ -155,7 +159,29 @@ TODO: Document these in the Installation Guide once they're final.
 
 To specify replication sites that appear in rsync URLs:
 
-``curl http://localhost:8080/api/admin/settings/:ReplicationSites -X PUT -d "dv.sbgrid.org:Harvard Medical School:USA,sbgrid.icm.uu.se:Uppsala University:Sweden,sbgrid.ncpss.org:Institut Pasteur de Montevideo:Uruguay,sbgrid.ncpss.org:Shanghai Institutes for Biological Sciences:China"``
+Download :download:`add-storage-site.json <../../../../scripts/api/data/storageSites/add-storage-site.json>` and adjust it to meet your needs. The file should look something like this:
+
+.. literalinclude:: ../../../../scripts/api/data/storageSites/add-storage-site.json
+
+Then add the storage site using curl:
+
+``curl -H "Content-type:application/json" -X POST http://localhost:8080/api/admin/storageSites --upload-file add-storage-site.json``
+
+You make a storage site the primary site by passing "true". Pass "false" to make it not the primary site. (id "1" in the example):
+
+``curl -X PUT -d true http://localhost:8080/api/admin/storageSites/1/primaryStorage``
+
+You can delete a storage site like this (id "1" in the example):
+
+``curl -X DELETE http://localhost:8080/api/admin/storageSites/1``
+
+You can view a single storage site like this: (id "1" in the example):
+
+``curl http://localhost:8080/api/admin/storageSites/1``
+
+You can view all storage site like this:
+
+``curl http://localhost:8080/api/admin/storageSites``
 
 In the GUI, this is called "Local Access". It's where you can compute on files on your cluster.
 

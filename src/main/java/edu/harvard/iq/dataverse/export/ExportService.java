@@ -3,7 +3,7 @@ package edu.harvard.iq.dataverse.export;
 import edu.harvard.iq.dataverse.Dataset;
 import edu.harvard.iq.dataverse.DatasetVersion;
 import edu.harvard.iq.dataverse.DvObject;
-import static edu.harvard.iq.dataverse.IdServiceBean.logger;
+import static edu.harvard.iq.dataverse.GlobalIdServiceBean.logger;
 import edu.harvard.iq.dataverse.dataaccess.DataAccess;
 import static edu.harvard.iq.dataverse.dataaccess.DataAccess.getStorageIO;
 import edu.harvard.iq.dataverse.dataaccess.DataAccessOption;
@@ -38,6 +38,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import org.apache.commons.io.IOUtils;
 
 /**
  *
@@ -75,7 +76,7 @@ public class ExportService {
 
     public List< String[]> getExportersLabels() {
         List<String[]> retList = new ArrayList<>();
-        Iterator<Exporter> exporters = ExportService.getInstance().loader.iterator();
+        Iterator<Exporter> exporters = ExportService.getInstance(null).loader.iterator();
         while (exporters.hasNext()) {
             Exporter e = exporters.next();
             String[] temp = new String[2];
@@ -112,10 +113,13 @@ public class ExportService {
     }
 
     public String getExportAsString(Dataset dataset, String formatName) {
+        InputStream inputStream = null;
+        InputStreamReader inp = null;
         try {
-            InputStream inputStream = getExport(dataset, formatName);
+            inputStream = getExport(dataset, formatName);
             if (inputStream != null) {
-                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF8"));
+                inp = new InputStreamReader(inputStream, "UTF8");
+                BufferedReader br = new BufferedReader(inp);
                 StringBuilder sb = new StringBuilder();
                 String line;
                 while ((line = br.readLine()) != null) {
@@ -123,11 +127,16 @@ public class ExportService {
                     sb.append('\n');
                 }
                 br.close();
+                inp.close();
+                inputStream.close();
                 return sb.toString();
             }
         } catch (ExportException | IOException ex) {
             //ex.printStackTrace();
             return null;
+        } finally {
+            IOUtils.closeQuietly(inp);
+            IOUtils.closeQuietly(inputStream);
         }
         return null;
 
@@ -146,7 +155,7 @@ public class ExportService {
         try {
             DatasetVersion releasedVersion = dataset.getReleasedVersion();
             if (releasedVersion == null) {
-                throw new ExportException("No released version for dataset " + dataset.getGlobalId());
+                throw new ExportException("No released version for dataset " + dataset.getGlobalIdString());
             }
             JsonPrinter jsonPrinter = new JsonPrinter(settingsService);
             final JsonObjectBuilder datasetAsJsonBuilder = jsonPrinter.jsonAsDatasetDto(releasedVersion);
@@ -208,7 +217,7 @@ public class ExportService {
         } catch (ServiceConfigurationError serviceError) {
             throw new ExportException("Service configuration error during export. " + serviceError.getMessage());
         } catch (IllegalStateException e) {
-            throw new ExportException("No published version found during export. " + dataset.getGlobalId());
+            throw new ExportException("No published version found during export. " + dataset.getGlobalIdString());
         }
     }
 
@@ -232,6 +241,11 @@ public class ExportService {
     // This method runs the selected metadata exporter, caching the output 
     // in a file in the dataset directory / container based on its DOI:
     private void cacheExport(DatasetVersion version, String format, JsonObject datasetAsJson, Exporter exporter) throws ExportException {
+        boolean tempFileRequired = false;
+        File tempFile = null;
+        OutputStream outputStream = null;
+        Dataset dataset = version.getDataset();
+        StorageIO<Dataset> storageIO = null;
         try {
             // With some storage drivers, we can open a WritableChannel, or OutputStream 
             // to directly write the generated metadata export that we want to cache; 
@@ -239,11 +253,6 @@ public class ExportService {
             // "operation not supported" exception. If that's the case, we'll have 
             // to save the output into a temp file, and then copy it over to the 
             // permanent storage using the IO "save" command: 
-            boolean tempFileRequired = false;
-            File tempFile = null;
-            OutputStream outputStream = null;
-            Dataset dataset = version.getDataset();
-            StorageIO<Dataset> storageIO = null;
             try {
                 storageIO = DataAccess.createNewStorageIO(dataset, "placeholder");
                 Channel outputChannel = storageIO.openAuxChannel("export_" + format + ".cached", DataAccessOption.WRITE_ACCESS);
@@ -262,7 +271,7 @@ public class ExportService {
                     exporter.exportDataset(version, datasetAsJson, cachedExportOutputStream);
                     cachedExportOutputStream.flush();
                     cachedExportOutputStream.close();
-
+                    outputStream.close();
                 } else {
                     // this method copies a local filesystem Path into this DataAccess Auxiliary location:
                     exporter.exportDataset(version, datasetAsJson, outputStream);
@@ -281,6 +290,8 @@ public class ExportService {
 
         } catch (IOException ioex) {
             throw new ExportException("IO Exception thrown exporting as " + "export_" + format + ".cached");
+        } finally {
+            IOUtils.closeQuietly(outputStream);
         }
 
     }
@@ -312,14 +323,11 @@ public class ExportService {
         InputStream cachedExportInputStream = null;
 
         try {
-            if (dataAccess.getAuxFileAsInputStream("export_" + formatName + ".cached") != null) {
-                cachedExportInputStream = dataAccess.getAuxFileAsInputStream("export_" + formatName + ".cached");
-                return cachedExportInputStream;
-            }
+            cachedExportInputStream = dataAccess.getAuxFileAsInputStream("export_" + formatName + ".cached");
+            return cachedExportInputStream;
         } catch (IOException ioex) {
             throw new IOException("IO Exception thrown exporting as " + "export_" + formatName + ".cached");
         }
-        return null;
 
     }
 

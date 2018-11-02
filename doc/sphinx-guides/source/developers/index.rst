@@ -12,6 +12,7 @@ Developer Guide
 
    intro
    dev-environment
+   windows
    tips
    troubleshooting
    version-control
@@ -19,6 +20,7 @@ Developer Guide
    documentation
    debugging
    coding-style
+   deployment
    containers
    making-releases
    tools

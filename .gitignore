@@ -1,5 +1,6 @@
 nb-configuration.xml
 target
+infer-out
 nbactions.xml
 michael-local
 GPATH
@@ -45,3 +46,5 @@ conf/docker-aio/testdata/
 /.project
 /.settings/
 /.gitignore
+scripts/installer/default.config
+*.pem
