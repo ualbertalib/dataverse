@@ -21,6 +21,7 @@
 package edu.harvard.iq.dataverse.ingest;
 
 import edu.harvard.iq.dataverse.ControlledVocabularyValue;
+import edu.harvard.iq.dataverse.datavariable.VariableCategory;
 import edu.harvard.iq.dataverse.datavariable.VariableServiceBean;
 import edu.harvard.iq.dataverse.DatasetServiceBean;
 import edu.harvard.iq.dataverse.Dataset;
@@ -35,12 +36,15 @@ import edu.harvard.iq.dataverse.DatasetFieldValue;
 import edu.harvard.iq.dataverse.DatasetFieldCompoundValue;
 import edu.harvard.iq.dataverse.DatasetLock;
 import edu.harvard.iq.dataverse.DatasetVersion;
+import edu.harvard.iq.dataverse.DvObject;
 import edu.harvard.iq.dataverse.FileMetadata;
 import edu.harvard.iq.dataverse.MetadataBlock;
 import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
 import edu.harvard.iq.dataverse.dataaccess.DataAccess;
+import edu.harvard.iq.dataverse.dataaccess.DataAccessOption;
 import edu.harvard.iq.dataverse.dataaccess.StorageIO;
 import edu.harvard.iq.dataverse.dataaccess.ImageThumbConverter;
+import edu.harvard.iq.dataverse.dataaccess.S3AccessIO;
 import edu.harvard.iq.dataverse.dataaccess.TabularSubsetGenerator;
 import edu.harvard.iq.dataverse.datavariable.SummaryStatistic;
 import edu.harvard.iq.dataverse.datavariable.DataVariable;
@@ -69,6 +73,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
@@ -92,6 +97,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.ListIterator;
 import java.util.logging.Logger;
+import java.util.Hashtable;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.inject.Named;
@@ -149,221 +155,263 @@ public class IngestServiceBean {
     // DataFileCategory objects, if any were already assigned to the files). 
     // It must be called before we attempt to permanently save the files in 
     // the database by calling the Save command on the dataset and/or version. 
-    public List<DataFile> saveAndAddFilesToDataset(DatasetVersion version, List<DataFile> newFiles) {
-        List<DataFile> ret = new ArrayList<>();
-        
-        if (newFiles != null && newFiles.size() > 0) {
-            //ret = new ArrayList<>();
-            // final check for duplicate file names; 
-            // we tried to make the file names unique on upload, but then 
-            // the user may have edited them on the "add files" page, and 
-            // renamed FOOBAR-1.txt back to FOOBAR.txt...
+	public List<DataFile> saveAndAddFilesToDataset(DatasetVersion version, List<DataFile> newFiles) {
+		List<DataFile> ret = new ArrayList<>();
 
-            IngestUtil.checkForDuplicateFileNamesFinal(version, newFiles);
+		if (newFiles != null && newFiles.size() > 0) {
+			// ret = new ArrayList<>();
+			// final check for duplicate file names;
+			// we tried to make the file names unique on upload, but then
+			// the user may have edited them on the "add files" page, and
+			// renamed FOOBAR-1.txt back to FOOBAR.txt...
 
-            Dataset dataset = version.getDataset();
+			IngestUtil.checkForDuplicateFileNamesFinal(version, newFiles);
 
-            for (DataFile dataFile : newFiles) {
-                String tempFileLocation = FileUtil.getFilesTempDirectory() + "/" + dataFile.getStorageIdentifier();
+			Dataset dataset = version.getDataset();
 
-                // Try to save the file in its permanent location: 
-                String storageId = dataFile.getStorageIdentifier().replaceFirst("^tmp://", "");
+			for (DataFile dataFile : newFiles) {
+				boolean unattached = false;
+				boolean savedSuccess = false;
+				if (dataFile.getOwner() == null) {
+					unattached = true;
+					dataFile.setOwner(dataset);
+				}
 
-                Path tempLocationPath = Paths.get(FileUtil.getFilesTempDirectory() + "/" + storageId);
-                WritableByteChannel writeChannel = null;
-                FileChannel readChannel = null;
+				String[] storageInfo = DataAccess.getDriverIdAndStorageLocation(dataFile.getStorageIdentifier());
+				String driverType = DataAccess.getDriverType(storageInfo[0]);
+				String storageLocation = storageInfo[1];
+				String tempFileLocation = null;
+				Path tempLocationPath = null;
+				if (driverType.equals("tmp")) {  //"tmp" is the default if no prefix or the "tmp://" driver
+					tempFileLocation = FileUtil.getFilesTempDirectory() + "/" + storageLocation;
 
-                boolean unattached = false;
-                boolean savedSuccess = false;
-                StorageIO<DataFile> dataAccess = null;
+					// Try to save the file in its permanent location:
+					tempLocationPath = Paths.get(tempFileLocation);
+					WritableByteChannel writeChannel = null;
+					FileChannel readChannel = null;
 
-                try {
-                    logger.fine("Attempting to create a new storageIO object for " + storageId);
-                    if (dataFile.getOwner() == null) {
-                        unattached = true; 
-                        dataFile.setOwner(dataset);
-                    }
-                    dataAccess = DataAccess.createNewStorageIO(dataFile, storageId);
+					StorageIO<DataFile> dataAccess = null;
 
-                    logger.fine("Successfully created a new storageIO object.");
-                    /* 
-                         This commented-out code demonstrates how to copy bytes
-                         from a local InputStream (or a readChannel) into the
-                         writable byte channel of a Dataverse DataAccessIO object:
-                     */
-                    
-                    /*
-                        storageIO.open(DataAccessOption.WRITE_ACCESS);
-                                                
-                        writeChannel = storageIO.getWriteChannel();
-                        readChannel = new FileInputStream(tempLocationPath.toFile()).getChannel();
-                                                
-                        long bytesPerIteration = 16 * 1024; // 16K bytes
-                        long start = 0;
-                        while ( start < readChannel.size() ) {
-                            readChannel.transferTo(start, bytesPerIteration, writeChannel);
-                            start += bytesPerIteration;
-                        }
-                     */
+					try {
+						logger.fine("Attempting to create a new storageIO object for " + storageLocation);
+						dataAccess = DataAccess.createNewStorageIO(dataFile, storageLocation);
 
-                    /* 
-                            But it's easier to use this convenience method from the
-                            DataAccessIO: 
-                            
-                            (if the underlying storage method for this file is 
-                            local filesystem, the DataAccessIO will simply copy 
-                            the file using Files.copy, like this:
-                        
-                            Files.copy(tempLocationPath, storageIO.getFileSystemLocation(), StandardCopyOption.REPLACE_EXISTING);
-                     */
-                    dataAccess.savePath(tempLocationPath);
+						logger.fine("Successfully created a new storageIO object.");
+						/*
+						 * This commented-out code demonstrates how to copy bytes from a local
+						 * InputStream (or a readChannel) into the writable byte channel of a Dataverse
+						 * DataAccessIO object:
+						 */
 
-                    // Set filesize in bytes
-                    // 
-                    dataFile.setFilesize(dataAccess.getSize());
-                    savedSuccess = true;
-                    logger.fine("Success: permanently saved file " + dataFile.getFileMetadata().getLabel());
+						/*
+						 * storageIO.open(DataAccessOption.WRITE_ACCESS);
+						 * 
+						 * writeChannel = storageIO.getWriteChannel(); readChannel = new
+						 * FileInputStream(tempLocationPath.toFile()).getChannel();
+						 * 
+						 * long bytesPerIteration = 16 * 1024; // 16K bytes long start = 0; while (
+						 * start < readChannel.size() ) { readChannel.transferTo(start,
+						 * bytesPerIteration, writeChannel); start += bytesPerIteration; }
+						 */
 
-                } catch (IOException ioex) {
+						/*
+						 * But it's easier to use this convenience method from the DataAccessIO:
+						 * 
+						 * (if the underlying storage method for this file is local filesystem, the
+						 * DataAccessIO will simply copy the file using Files.copy, like this:
+						 * 
+						 * Files.copy(tempLocationPath, storageIO.getFileSystemLocation(),
+						 * StandardCopyOption.REPLACE_EXISTING);
+						 */
+						dataAccess.savePath(tempLocationPath);
+
+						// Set filesize in bytes
+						//
+						dataFile.setFilesize(dataAccess.getSize());
+						savedSuccess = true;
+						logger.fine("Success: permanently saved file " + dataFile.getFileMetadata().getLabel());
+
+					} catch (IOException ioex) {
                     logger.warning("Failed to save the file, storage id " + dataFile.getStorageIdentifier() + " (" + ioex.getMessage() + ")");
-                } finally {
-                    if (readChannel != null) {
-                        try {
-                            readChannel.close();
-                        } catch (IOException e) {
-                        }
+					} finally {
+						if (readChannel != null) {
+							try {
+								readChannel.close();
+							} catch (IOException e) {
+							}
+						}
+						if (writeChannel != null) {
+							try {
+								writeChannel.close();
+							} catch (IOException e) {
+							}
+						}
+					}
+
+                    // Since we may have already spent some CPU cycles scaling down image thumbnails, 
+					// we may as well save them, by moving these generated images to the permanent
+					// dataset directory. We should also remember to delete any such files in the
+					// temp directory:
+					List<Path> generatedTempFiles = listGeneratedTempFiles(Paths.get(FileUtil.getFilesTempDirectory()),
+							storageLocation);
+					if (generatedTempFiles != null) {
+						for (Path generated : generatedTempFiles) {
+							if (savedSuccess) { // no need to try to save this aux file permanently, if we've failed to
+												// save the main file!
+								logger.fine("(Will also try to permanently save generated thumbnail file "
+										+ generated.toString() + ")");
+								try {
+									// Files.copy(generated, Paths.get(dataset.getFileSystemDirectory().toString(),
+									// generated.getFileName().toString()));
+									int i = generated.toString().lastIndexOf("thumb");
+									if (i > 1) {
+										String extensionTag = generated.toString().substring(i);
+										dataAccess.savePathAsAux(generated, extensionTag);
+										logger.fine(
+												"Saved generated thumbnail as aux object. \"preview available\" status: "
+														+ dataFile.isPreviewImageAvailable());
+									} else {
+										logger.warning(
+												"Generated thumbnail file name does not match the expected pattern: "
+														+ generated.toString());
+									}
+
+								} catch (IOException ioex) {
+									logger.warning("Failed to save generated file " + generated.toString());
+								}
+							}
+
+							// ... but we definitely want to delete it:
+							try {
+								Files.delete(generated);
+							} catch (IOException ioex) {
+								logger.warning("Failed to delete generated file " + generated.toString());
+							}
+						}
+					}
+
+					if (unattached) {
+						dataFile.setOwner(null);
+					}
+					// Any necessary post-processing:
+					// performPostProcessingTasks(dataFile);
+				} else {
+					try {
+						StorageIO<DvObject> dataAccess = DataAccess.getStorageIO(dataFile);
+						//Populate metadata
+						dataAccess.open(DataAccessOption.READ_ACCESS);
+						//set file size
+						dataFile.setFilesize(dataAccess.getSize());
+						if(dataAccess instanceof S3AccessIO) {
+							  ((S3AccessIO<DvObject>)dataAccess).removeTempTag();
+						}
+					} catch (IOException ioex) {
+						logger.warning("Failed to get file size, storage id " + dataFile.getStorageIdentifier() + " ("
+								+ ioex.getMessage() + ")");
+					}
+					savedSuccess = true;
+					dataFile.setOwner(null);
+				}
+
+				logger.fine("Done! Finished saving new files in permanent storage and adding them to the dataset.");
+				boolean belowLimit = false;
+
+				try {
+					belowLimit = dataFile.getStorageIO().isBelowIngestSizeLimit();
+				} catch (IOException e) {
+					logger.warning("Error getting ingest limit for file: " + dataFile.getIdentifier() + " : " + e.getMessage());
+				} 
+
+				if (savedSuccess && belowLimit) {
+					// These are all brand new files, so they should all have
+					// one filemetadata total. -- L.A.
+					FileMetadata fileMetadata = dataFile.getFileMetadatas().get(0);
+					String fileName = fileMetadata.getLabel();
+
+					boolean metadataExtracted = false;
+					if (FileUtil.canIngestAsTabular(dataFile)) {
+						/*
+						 * Note that we don't try to ingest the file right away - instead we mark it as
+						 * "scheduled for ingest", then at the end of the save process it will be queued
+						 * for async. ingest in the background. In the meantime, the file will be
+						 * ingested as a regular, non-tabular file, and appear as such to the user,
+						 * until the ingest job is finished with the Ingest Service.
+						 */
+						dataFile.SetIngestScheduled();
+					} else if (fileMetadataExtractable(dataFile)) {
+
+						try {
+							// FITS is the only type supported for metadata
+							// extraction, as of now. -- L.A. 4.0
+							dataFile.setContentType("application/fits");
+							metadataExtracted = extractMetadata(tempFileLocation, dataFile, version);
+						} catch (IOException mex) {
+							logger.severe("Caught exception trying to extract indexable metadata from file "
+									+ fileName + ",  " + mex.getMessage());
+						}
+						if (metadataExtracted) {
+							logger.fine("Successfully extracted indexable metadata from file " + fileName);
+						} else {
+							logger.fine("Failed to extract indexable metadata from file " + fileName);
+						}
+					} else if (FileUtil.MIME_TYPE_INGESTED_FILE.equals(dataFile.getContentType())) {
+                        // Make sure no *uningested* tab-delimited files are saved with the type "text/tab-separated-values"!
+                        // "text/tsv" should be used instead: 
+                        dataFile.setContentType(FileUtil.MIME_TYPE_TSV);
                     }
-                    if (writeChannel != null) {
-                        try {
-                            writeChannel.close();
-                        } catch (IOException e) {
-                        }
-                    }
-                }
-                
-                // Since we may have already spent some CPU cycles scaling down image thumbnails, 
-                // we may as well save them, by moving these generated images to the permanent 
-                // dataset directory. We should also remember to delete any such files in the
-                // temp directory:
-                List<Path> generatedTempFiles = listGeneratedTempFiles(Paths.get(FileUtil.getFilesTempDirectory()), storageId);
-                if (generatedTempFiles != null) {
-                    for (Path generated : generatedTempFiles) {
-                        if (savedSuccess) { // no need to try to save this aux file permanently, if we've failed to save the main file!
-                            logger.fine("(Will also try to permanently save generated thumbnail file " + generated.toString() + ")");
-                            try {
-                                //Files.copy(generated, Paths.get(dataset.getFileSystemDirectory().toString(), generated.getFileName().toString()));
-                                int i = generated.toString().lastIndexOf("thumb");
-                                if (i > 1) {
-                                    String extensionTag = generated.toString().substring(i);
-                                    dataAccess.savePathAsAux(generated, extensionTag);
-                                    logger.fine("Saved generated thumbnail as aux object. \"preview available\" status: " + dataFile.isPreviewImageAvailable());
-                                } else {
-                                    logger.warning("Generated thumbnail file name does not match the expected pattern: " + generated.toString());
-                                }
+				}
+				// ... and let's delete the main temp file if it exists:
+				if(tempLocationPath!=null) {
+    				try {
+	    				logger.fine("Will attempt to delete the temp file " + tempLocationPath.toString());
+			    		Files.delete(tempLocationPath);
+				    } catch (IOException ex) {
+					    // (non-fatal - it's just a temp file.)
+    					logger.warning("Failed to delete temp file " + tempLocationPath.toString());
+	    			}				
+				}
+				if (savedSuccess) {
+					// temp dbug line
+					// System.out.println("ADDING FILE: " + fileName + "; for dataset: " +
+					// dataset.getGlobalId());
+					// Make sure the file is attached to the dataset and to the version, if this
+					// hasn't been done yet:
+					if (dataFile.getOwner() == null) {
+						dataFile.setOwner(dataset);
 
-                            } catch (IOException ioex) {
-                                logger.warning("Failed to save generated file " + generated.toString());
-                            }
-                        }
+						version.getFileMetadatas().add(dataFile.getFileMetadata());
+						dataFile.getFileMetadata().setDatasetVersion(version);
+						dataset.getFiles().add(dataFile);
 
-                        // ... but we definitely want to delete it:
-                        try {
-                            Files.delete(generated);
-                        } catch (IOException ioex) {
-                            logger.warning("Failed to delete generated file " + generated.toString());
-                        }
-                    }
-                }
+						if (dataFile.getFileMetadata().getCategories() != null) {
+							ListIterator<DataFileCategory> dfcIt = dataFile.getFileMetadata().getCategories()
+									.listIterator();
 
-                // ... and let's delete the main temp file:
-                try {
-                    logger.fine("Will attempt to delete the temp file " + tempLocationPath.toString());
-                    Files.delete(tempLocationPath);
-                } catch (IOException ex) {
-                    // (non-fatal - it's just a temp file.)
-                    logger.warning("Failed to delete temp file " + tempLocationPath.toString());
-                }
+							while (dfcIt.hasNext()) {
+								DataFileCategory dataFileCategory = dfcIt.next();
 
-                if (unattached) {
-                    dataFile.setOwner(null);
-                }
-                // Any necessary post-processing: 
-                //performPostProcessingTasks(dataFile);
-                
-                if (savedSuccess) {
-                    // These are all brand new files, so they should all have 
-                    // one filemetadata total. -- L.A. 
-                    FileMetadata fileMetadata = dataFile.getFileMetadatas().get(0);
-                    String fileName = fileMetadata.getLabel();
+								if (dataFileCategory.getDataset() == null) {
+									DataFileCategory newCategory = dataset
+											.getCategoryByName(dataFileCategory.getName());
+									if (newCategory != null) {
+										newCategory.addFileMetadata(dataFile.getFileMetadata());
+										// dataFileCategory = newCategory;
+										dfcIt.set(newCategory);
+									} else {
+										dfcIt.remove();
+									}
+								}
+							}
+						}
+					}
+				}
 
-                    boolean metadataExtracted = false;
-                    if (FileUtil.canIngestAsTabular(dataFile)) {
-                        /*
-                         * Note that we don't try to ingest the file right away - 
-                         * instead we mark it as "scheduled for ingest", then at 
-                         * the end of the save process it will be queued for async. 
-                         * ingest in the background. In the meantime, the file 
-                         * will be ingested as a regular, non-tabular file, and 
-                         * appear as such to the user, until the ingest job is
-                         * finished with the Ingest Service.
-                         */
-                        dataFile.SetIngestScheduled();
-                    } else if (fileMetadataExtractable(dataFile)) {
+				ret.add(dataFile);
+			}
+		}
 
-                        try {
-                            // FITS is the only type supported for metadata 
-                            // extraction, as of now. -- L.A. 4.0 
-                            dataFile.setContentType("application/fits");
-                            metadataExtracted = extractMetadata(tempFileLocation, dataFile, version);
-                        } catch (IOException mex) {
-                            logger.severe("Caught exception trying to extract indexable metadata from file " + fileName + ",  " + mex.getMessage());
-                        }
-                        if (metadataExtracted) {
-                            logger.fine("Successfully extracted indexable metadata from file " + fileName);
-                        } else {
-                            logger.fine("Failed to extract indexable metadata from file " + fileName);
-                        }
-                    }
-                    // temp dbug line
-                    //System.out.println("ADDING FILE: " + fileName + "; for dataset: " + dataset.getGlobalId());                    
-                    // Make sure the file is attached to the dataset and to the version, if this 
-                    // hasn't been done yet:
-                    if (dataFile.getOwner() == null) {
-                        dataFile.setOwner(dataset);
-
-                        version.getFileMetadatas().add(dataFile.getFileMetadata());
-                        dataFile.getFileMetadata().setDatasetVersion(version);
-                        dataset.getFiles().add(dataFile);
-                        
-                        if (dataFile.getFileMetadata().getCategories() != null) {
-                            ListIterator<DataFileCategory> dfcIt = dataFile.getFileMetadata().getCategories().listIterator();
-
-                            while (dfcIt.hasNext()) {
-                                DataFileCategory dataFileCategory = dfcIt.next();
-                                
-                                if (dataFileCategory.getDataset() == null) {
-                                    DataFileCategory newCategory = dataset.getCategoryByName(dataFileCategory.getName());
-                                    if (newCategory != null) {
-                                        newCategory.addFileMetadata(dataFile.getFileMetadata());
-                                        //dataFileCategory = newCategory;
-                                        dfcIt.set(newCategory);
-                                    } else { 
-                                        dfcIt.remove();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    ret.add(dataFile);
-                }
-            }
-
-            logger.fine("Done! Finished saving new files in permanent storage and adding them to the dataset.");
-        }
-        
-        return ret;
-    }
+		return ret;
+	}
     
     public List<Path> listGeneratedTempFiles(Path tempDirectory, String baseName) {
         List<Path> generatedFiles = new ArrayList<>();
@@ -421,12 +469,12 @@ public class IngestServiceBean {
 
         List<DataFile> scheduledFiles = new ArrayList<>();
         for (DataFile dataFile : dataFiles) {
+            // refresh the copy of the DataFile:
+            dataFile = fileService.find(dataFile.getId());
+            
             if (dataFile.isIngestScheduled()) {
 
-                // refresh the copy of the DataFile:
-                dataFile = fileService.find(dataFile.getId());
-
-                long ingestSizeLimit = -1;
+                long ingestSizeLimit = 0;
                 try {
                     ingestSizeLimit = systemConfig.getTabularIngestSizeLimit(getTabDataReaderByMimeType(dataFile.getContentType()).getFormatName());
                 } catch (IOException ioex) {
@@ -473,7 +521,7 @@ public class IngestServiceBean {
                 }
             });
 
-            ingestMessage = new IngestMessage(IngestMessage.INGEST_MESAGE_LEVEL_INFO);
+            ingestMessage = new IngestMessage(IngestMessage.INGEST_MESAGE_LEVEL_INFO, user.getId());
             for (int i = 0; i < count; i++) {
                 ingestMessage.addFileId(scheduledFilesArray[i].getId());
             }
@@ -625,6 +673,69 @@ public class IngestServiceBean {
             }
         }
     }
+
+    public static void produceFrequencyStatistics(DataFile dataFile, File generatedTabularFile) throws IOException {
+
+        List<DataVariable> vars = dataFile.getDataTable().getDataVariables();
+
+        produceFrequencies(generatedTabularFile, vars);
+    }
+
+    public static void produceFrequencies( File generatedTabularFile, List<DataVariable> vars) throws IOException {
+
+        for (int i = 0; i < vars.size(); i++) {
+
+            Collection<VariableCategory> cats = vars.get(i).getCategories();
+            int caseQuantity = vars.get(i).getDataTable().getCaseQuantity().intValue();
+            boolean isNumeric = vars.get(i).isTypeNumeric();
+            Object[] variableVector = null;
+            if (cats.size() > 0) {
+                if (isNumeric) {
+                    variableVector = TabularSubsetGenerator.subsetFloatVector(new FileInputStream(generatedTabularFile), i, caseQuantity);
+                }
+                else {
+                    variableVector = TabularSubsetGenerator.subsetStringVector(new FileInputStream(generatedTabularFile), i, caseQuantity);
+                }
+                if (variableVector != null) {
+                    Hashtable<Object, Double> freq = calculateFrequency(variableVector);
+                    for (VariableCategory cat : cats) {
+                        Object catValue;
+                        if (isNumeric) {
+                            catValue = new Float(cat.getValue());
+                        } else {
+                            catValue = cat.getValue();
+                        }
+                        Double numberFreq = freq.get(catValue);
+                        if (numberFreq != null) {
+                            cat.setFrequency(numberFreq);
+                        } else {
+                            cat.setFrequency(0D);
+                        }
+                    }
+                } else {
+                    logger.fine("variableVector is null for variable " + vars.get(i).getName());
+                }
+            }
+        }
+    }
+
+    public static Hashtable<Object, Double> calculateFrequency( Object[] variableVector) {
+        Hashtable<Object, Double> freq = new Hashtable<Object, Double>();
+
+        for (int j = 0; j < variableVector.length; j++) {
+            if (variableVector[j] != null) {
+                Double freqNum = freq.get(variableVector[j]);
+                if (freqNum != null) {
+                    freq.put(variableVector[j], freqNum + 1);
+                } else {
+                    freq.put(variableVector[j], 1D);
+                }
+            }
+        }
+
+        return freq;
+
+    }
     
     public void recalculateDataFileUNF(DataFile dataFile) {
         String[] unfValues = new String[dataFile.getDataTable().getVarQuantity().intValue()];
@@ -665,6 +776,15 @@ public class IngestServiceBean {
         DataFile dataFile = fileService.find(datafile_id);
         boolean ingestSuccessful = false;
         boolean forceTypeCheck = false;
+        
+        // Never attempt to ingest a file that's already ingested!
+        if (dataFile.isTabularData()) {
+            FileUtil.createIngestFailureReport(dataFile, "Repeated ingest attempted on a tabular data file! (status flag was: "+dataFile.getIngestStatus());
+            dataFile.setIngestDone();
+            dataFile = fileService.save(dataFile);
+            logger.warning("Repeated ingest attempted on a tabular data file (datafile id "+datafile_id+"); exiting.");
+            return false;
+        }
         
         IngestRequest ingestRequest = dataFile.getIngestRequest();
         if (ingestRequest != null) {
@@ -806,12 +926,14 @@ public class IngestServiceBean {
                 } else {
                     tabDataIngest.getDataTable().setOriginalFileFormat(originalContentType);
                 }
+                tabDataIngest.getDataTable().setOriginalFileSize(originalFileSize);
 
                 dataFile.setDataTable(tabDataIngest.getDataTable());
                 tabDataIngest.getDataTable().setDataFile(dataFile);
 
                 try {
                     produceSummaryStatistics(dataFile, tabFile);
+                    produceFrequencyStatistics(dataFile, tabFile);
                     postIngestTasksSuccessful = true;
                 } catch (IOException postIngestEx) {
 
@@ -844,7 +966,7 @@ public class IngestServiceBean {
                             throw new EJBException("Deliberate database save failure");
                         }
                      */
-                    dataFile = fileService.save(dataFile);
+                    dataFile = fileService.saveInTransaction(dataFile);
                     databaseSaveSuccessful = true;
 
                     logger.fine("Ingest (" + dataFile.getFileMetadata().getLabel() + ".");
@@ -871,7 +993,7 @@ public class IngestServiceBean {
                 }
 
                 if (!databaseSaveSuccessful) {
-                    logger.warning("Ingest failure (!databaseSaveSuccessful).");
+                    logger.warning("Ingest failure (failed to save the tabular data in the database; file left intact as uploaded).");
                     return false;
                 }
 
@@ -894,6 +1016,9 @@ public class IngestServiceBean {
                     dataAccess.savePath(Paths.get(tabFile.getAbsolutePath()));
                     // Reset the file size: 
                     dataFile.setFilesize(dataAccess.getSize());
+                    
+                    dataFile = fileService.save(dataFile);
+                    logger.fine("saved data file after updating the size");
 
                     // delete the temp tab-file:
                     tabFile.delete();
@@ -1001,7 +1126,7 @@ public class IngestServiceBean {
             ingestPlugin = new RDATAFileReader(new RDATAFileReaderSpi());
         } else if (mimeType.equals(FileUtil.MIME_TYPE_CSV) || mimeType.equals(FileUtil.MIME_TYPE_CSV_ALT)) {
             ingestPlugin = new CSVFileReader(new CSVFileReaderSpi(), ',');
-        } else if (mimeType.equals(FileUtil.MIME_TYPE_TSV) || mimeType.equals(FileUtil.MIME_TYPE_TSV_ALT)) {
+        } else if (mimeType.equals(FileUtil.MIME_TYPE_TSV) /*|| mimeType.equals(FileUtil.MIME_TYPE_TSV_ALT)*/) {
             ingestPlugin = new CSVFileReader(new CSVFileReaderSpi(), '\t');
         }  else if (mimeType.equals(FileUtil.MIME_TYPE_XLSX)) {
             ingestPlugin = new XLSXFileReader(new XLSXFileReaderSpi());
@@ -1035,12 +1160,17 @@ public class IngestServiceBean {
     public boolean extractMetadata(String tempFileLocation, DataFile dataFile, DatasetVersion editVersion) throws IOException {
         boolean ingestSuccessful = false;
 
-        FileInputStream tempFileInputStream = null; 
-        
-        try {
-            tempFileInputStream = new FileInputStream(new File(tempFileLocation));
-        } catch (FileNotFoundException notfoundEx) {
-            throw new IOException("Could not open temp file "+tempFileLocation);
+        InputStream tempFileInputStream = null; 
+        if(tempFileLocation == null) {
+        	StorageIO<DataFile> sio = dataFile.getStorageIO();
+        	sio.open(DataAccessOption.READ_ACCESS);
+        	tempFileInputStream = sio.getInputStream();
+        } else {
+        	try {
+        		tempFileInputStream = new FileInputStream(new File(tempFileLocation));
+        	} catch (FileNotFoundException notfoundEx) {
+        		throw new IOException("Could not open temp file "+tempFileLocation);
+        	}
         }
         
         // Locate metadata extraction plugin for the file format by looking
@@ -1609,6 +1739,22 @@ public class IngestServiceBean {
         logger.info("Finished repairing tabular data files that were missing the original file format labels.");
     }
     
+    // This method takes a list of file ids and tries to fix the size of the saved 
+    // original, if present
+    // Note the @Asynchronous attribute - this allows us to just kick off and run this 
+    // (potentially large) job in the background. 
+    // The method is called by the "fixmissingoriginalsizes" /admin api call. 
+    @Asynchronous
+    public void fixMissingOriginalSizes(List<Long> datafileIds) {
+        for (Long fileId : datafileIds) {
+            fixMissingOriginalSize(fileId);
+            try {
+                Thread.sleep(1000);
+            } catch (Exception ex) {}
+        }
+        logger.info("Finished repairing tabular data files that were missing the original file sizes.");
+    }
+    
     // This method fixes a datatable object that's missing the format type of 
     // the ingested original. It will check the saved original file to 
     // determine the type. 
@@ -1679,6 +1825,8 @@ public class IngestServiceBean {
                     logger.warning("Caught exception trying to determine original file type (datafile id=" + fileId + ", datatable id=" + datatableId + "): " + ioex.getMessage());
                 }
                 
+                Long savedOriginalFileSize = savedOriginalFile.length(); 
+                
                 // If we had to create a temp file, delete it now: 
                 if (tempFileRequired) {
                     savedOriginalFile.delete();
@@ -1703,10 +1851,51 @@ public class IngestServiceBean {
 
                 // save permanently in the database:
                 dataFile.getDataTable().setOriginalFileFormat(fileTypeDetermined);
+                dataFile.getDataTable().setOriginalFileSize(savedOriginalFileSize);
                 fileService.saveDataTable(dataFile.getDataTable());
 
             } else {
                 logger.info("DataFile id=" + fileId + "; original type already present: " + originalFormat);
+            }
+        } else {
+            logger.warning("DataFile id=" + fileId + ": No such DataFile!");
+        }
+    }
+    
+    // This method fixes a datatable object that's missing the size of the 
+    // ingested original. 
+    private void fixMissingOriginalSize(long fileId) {
+        DataFile dataFile = fileService.find(fileId);
+
+        if (dataFile != null && dataFile.isTabularData()) {
+            Long savedOriginalFileSize = dataFile.getDataTable().getOriginalFileSize();
+            Long datatableId = dataFile.getDataTable().getId();
+            
+            if (savedOriginalFileSize == null) {
+                
+                StorageIO<DataFile> storageIO;
+                
+                try {
+                    storageIO = dataFile.getStorageIO();
+                    storageIO.open();
+                    savedOriginalFileSize = storageIO.getAuxObjectSize(FileUtil.SAVED_ORIGINAL_FILENAME_EXTENSION);
+
+                } catch (Exception ex) {
+                    logger.warning("Exception "+ex.getClass()+" caught trying to look up the size of the saved original; (datafile id=" + fileId + ", datatable id=" + datatableId + "): " + ex.getMessage());
+                    return;
+                }
+
+                if (savedOriginalFileSize == null) {
+                    logger.warning("Failed to look up the size of the saved original file! (datafile id=" + fileId + ", datatable id=" + datatableId + ")");
+                    return;
+                }
+
+                // save permanently in the database:
+                dataFile.getDataTable().setOriginalFileSize(savedOriginalFileSize);
+                fileService.saveDataTable(dataFile.getDataTable());
+
+            } else {
+                logger.info("DataFile id=" + fileId + "; original file size already present: " + savedOriginalFileSize);
             }
         } else {
             logger.warning("DataFile id=" + fileId + ": No such DataFile!");

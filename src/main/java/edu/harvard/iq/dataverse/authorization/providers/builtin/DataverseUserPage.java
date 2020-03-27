@@ -156,7 +156,7 @@ public class DataverseUserPage implements java.io.Serializable {
                 
             } else {
                  // in create mode for new user
-                JH.addMessage(FacesMessage.SEVERITY_INFO, BundleUtil.getStringFromBundle("user.signup.tip"));
+                JH.addMessage(FacesMessage.SEVERITY_INFO, BundleUtil.getStringFromBundle("user.message.signup.label"), BundleUtil.getStringFromBundle("user.message.signup.tip"));
                 userDisplayInfo = new AuthenticatedUserDisplayInfo();
                 return "";
             }
@@ -329,6 +329,7 @@ public class DataverseUserPage implements java.io.Serializable {
             // Authenticated user registered. Save the new bulitin, and log in.
             builtinUserService.save(builtinUser);
             session.setUser(au);
+            session.configureSessionTimeout();
             /**
              * @todo Move this to
              * AuthenticationServiceBean.createAuthenticatedUser
@@ -338,6 +339,16 @@ public class DataverseUserPage implements java.io.Serializable {
                     UserNotification.Type.CREATEACC, null);
 
             // go back to where user came from
+            
+            // (but if they came from the login page, then send them to the 
+            // root dataverse page instead. the only situation where we do 
+            // want to send them back to the login page is if they hit 
+            // 'cancel'. 
+            
+            if ("/loginpage.xhtml".equals(redirectPage) || "loginpage.xhtml".equals(redirectPage)) {
+                redirectPage = "/dataverse.xhtml";
+            }
+            
             if ("dataverse.xhtml".equals(redirectPage)) {
                 redirectPage = redirectPage + "?alias=" + dataverseService.findRootDataverse().getAlias();
             }
@@ -462,7 +473,9 @@ public class DataverseUserPage implements java.io.Serializable {
 
                 case REQUESTFILEACCESS:
                     DataFile file = fileService.find(userNotification.getObjectId());
-                    userNotification.setTheObject(file.getOwner());
+                    if (file != null) {
+                        userNotification.setTheObject(file.getOwner());
+                    }
                     break;
                 case GRANTFILEACCESS:
                 case REJECTFILEACCESS:
@@ -495,6 +508,15 @@ public class DataverseUserPage implements java.io.Serializable {
 
                 case CHECKSUMIMPORT:
                     userNotification.setTheObject(datasetVersionService.find(userNotification.getObjectId()));
+                    break;
+
+                case APIGENERATED:
+                    userNotification.setTheObject(userNotification.getUser());
+                    break;
+
+                case INGESTCOMPLETED:
+                case INGESTCOMPLETEDWITHERRORS:
+                    userNotification.setTheObject(datasetService.find(userNotification.getObjectId()));
                     break;
             }
 

@@ -24,6 +24,7 @@ import edu.harvard.iq.dataverse.api.dto.FieldDTO;
 import edu.harvard.iq.dataverse.authorization.groups.impl.ipaddress.IpGroup;
 import edu.harvard.iq.dataverse.authorization.groups.impl.ipaddress.ip.IpAddress;
 import edu.harvard.iq.dataverse.authorization.groups.impl.ipaddress.ip.IpAddressRange;
+import edu.harvard.iq.dataverse.dataaccess.DataAccess;
 import edu.harvard.iq.dataverse.datasetutility.OptionalFileParams;
 import edu.harvard.iq.dataverse.harvest.client.HarvestingClient;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
@@ -41,6 +42,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -102,6 +104,7 @@ public class JsonParser {
         dv.setPermissionRoot(jobj.getBoolean("permissionRoot", false));
         dv.setFacetRoot(jobj.getBoolean("facetRoot", false));
         dv.setAffiliation(jobj.getString("affiliation", null));
+      
         if (jobj.containsKey("dataverseContacts")) {
             JsonArray dvContacts = jobj.getJsonArray("dataverseContacts");
             int i = 0;
@@ -316,6 +319,7 @@ public class JsonParser {
             terms.setSizeOfCollection(obj.getString("sizeOfCollection", null));
             terms.setStudyCompletion(obj.getString("studyCompletion", null));
             terms.setLicense(parseLicense(obj.getString("license", null)));
+            terms.setFileAccessRequest(obj.getBoolean("fileAccessRequest", false));
             dsv.setTermsOfUseAndAccess(terms);
             
             dsv.setDatasetFields(parseMetadataBlocks(obj.getJsonObject("metadataBlocks")));
@@ -717,6 +721,12 @@ public class JsonParser {
             Map<String,String> paramMap = new HashMap<>();
             params.keySet().forEach(k -> paramMap.put(k,jsonValueToString(params.get(k))));
             wsd.setStepParameters(paramMap);
+        }
+        if ( json.containsKey("requiredSettings") ) {
+            JsonObject settings = json.getJsonObject("requiredSettings");
+            Map<String,String> settingsMap = new HashMap<>();
+            settings.keySet().forEach(k -> settingsMap.put(k,jsonValueToString(settings.get(k))));
+            wsd.setStepSettings(settingsMap);
         }
         return wsd;
     }

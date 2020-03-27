@@ -7,6 +7,7 @@ import com.jayway.restassured.response.Response;
 import java.util.logging.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import com.jayway.restassured.path.json.JsonPath;
 
 import java.util.List;
@@ -31,6 +32,8 @@ import com.jayway.restassured.parsing.Parser;
 import static com.jayway.restassured.path.json.JsonPath.with;
 import com.jayway.restassured.path.xml.XmlPath;
 import static edu.harvard.iq.dataverse.api.UtilIT.equalToCI;
+import static edu.harvard.iq.dataverse.authorization.AuthenticationResponse.Status.ERROR;
+import edu.harvard.iq.dataverse.authorization.groups.impl.builtin.AuthenticatedUsers;
 import edu.harvard.iq.dataverse.util.SystemConfig;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +47,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class DatasetsIT {
 
@@ -119,7 +123,60 @@ public class DatasetsIT {
         Response deleteDatasetResponse = UtilIT.deleteDatasetViaNativeApi(datasetId, apiToken);
         deleteDatasetResponse.prettyPrint();
         assertEquals(200, deleteDatasetResponse.getStatusCode());
+        
+        // Now, let's allow anyone with a Dataverse account (any "random user") 
+        // to create datasets in this dataverse: 
+        
+        Response grantRole = UtilIT.grantRoleOnDataverse(dataverseAlias, DataverseRole.DS_CONTRIBUTOR, AuthenticatedUsers.get().getIdentifier(), apiToken);
+        grantRole.prettyPrint();
+        assertEquals(OK.getStatusCode(), grantRole.getStatusCode());
+        
+        // Create another random user: 
+        
+        Response createRandomUser = UtilIT.createRandomUser();
+        createRandomUser.prettyPrint();
+        String randomUsername = UtilIT.getUsernameFromResponse(createRandomUser);
+        String randomUserApiToken = UtilIT.getApiTokenFromResponse(createRandomUser);
+        
+        // This random user should be able to create a dataset in the dataverse 
+        // above, because we've set it up so, right? - Not exactly: the dataverse
+        // hasn't been published yet! So if this random user tries to create 
+        // a dataset now, it should fail: 
+        /* - this test removed because the perms for create dataset have been reverted
+        createDatasetResponse = UtilIT.createRandomDatasetViaNativeApi(dataverseAlias, randomUserApiToken);
+        createDatasetResponse.prettyPrint();
+        assertEquals(UNAUTHORIZED.getStatusCode(), createDatasetResponse.getStatusCode());
+        */
+        // Now, let's publish this dataverse...
+        
+        Response publishDataverse = UtilIT.publishDataverseViaSword(dataverseAlias, apiToken);
+        assertEquals(OK.getStatusCode(), publishDataverse.getStatusCode());
 
+        // Return a short sleep here
+        //without it we have seen some database deadlocks SEK 09/13/2019
+
+        try {
+            Thread.sleep(1000l);
+        } catch (InterruptedException iex) {}
+
+        // ... And now that it's published, try to create a dataset again, 
+        // as the "random", not specifically authorized user: 
+        // (this time around, it should work!)
+        
+        createDatasetResponse = UtilIT.createRandomDatasetViaNativeApi(dataverseAlias, randomUserApiToken);
+        createDatasetResponse.prettyPrint();
+        datasetId = UtilIT.getDatasetIdFromResponse(createDatasetResponse);
+
+        datasetAsJson = UtilIT.nativeGet(datasetId, apiToken);
+        datasetAsJson.then().assertThat()
+                .statusCode(OK.getStatusCode());
+
+        // OK, let's delete this dataset as well, and then delete the dataverse...
+        
+        deleteDatasetResponse = UtilIT.deleteDatasetViaNativeApi(datasetId, apiToken);
+        deleteDatasetResponse.prettyPrint();
+        assertEquals(200, deleteDatasetResponse.getStatusCode());
+        
         Response deleteDataverseResponse = UtilIT.deleteDataverse(dataverseAlias, apiToken);
         deleteDataverseResponse.prettyPrint();
         assertEquals(200, deleteDataverseResponse.getStatusCode());
@@ -238,6 +295,15 @@ public class DatasetsIT {
         addSubjectViaNative.then().assertThat().body("message", equalTo("Delete metadata failed: Author: Spruce, Sabrina not found."))
                 .statusCode(400);
         
+        publishDataset = UtilIT.publishDatasetViaNativeApi(datasetPersistentId, "major", apiToken);
+        assertEquals(200, publishDataset.getStatusCode());
+        //6078
+        String pathToJsonFileEditPostPub = "doc/sphinx-guides/source/_static/api/dataset-edit-metadata-after-pub.json";
+        Response editPublishedVersion = UtilIT.updateFieldLevelDatasetMetadataViaNative(datasetPersistentId, pathToJsonFileEditPostPub, apiToken);
+        editPublishedVersion.prettyPrint();
+        editPublishedVersion.then().assertThat().statusCode(OK.getStatusCode());
+        
+        publishDataset = UtilIT.publishDatasetViaNativeApi(datasetPersistentId, "major", apiToken);
         //"Delete metadata failed: " + updateField.getDatasetFieldType().getDisplayName() + ": " + displayValue + " not found."
     }
 
@@ -281,10 +347,20 @@ public class DatasetsIT {
         Response publishDataverse = UtilIT.publishDataverseViaSword(dataverseAlias, apiToken);
         assertEquals(200, publishDataverse.getStatusCode());
         Response attemptToPublishZeroDotOne = UtilIT.publishDatasetViaNativeApiDeprecated(datasetPersistentId, "minor", apiToken);
+        logger.info("Attempting to publish a minor (\"zero-dot-one\") version");
         attemptToPublishZeroDotOne.prettyPrint();
         attemptToPublishZeroDotOne.then().assertThat()
                 .body("message", equalTo("Cannot publish as minor version. Re-try as major release."))
                 .statusCode(403);
+        
+        logger.info("Attempting to publish a major version");
+        // Return random sleep  9/13/2019
+        // Without it we've seen some DB deadlocks
+        // 3 second sleep, to allow the indexing to finish:
+
+        try {
+            Thread.sleep(3000l);
+        } catch (InterruptedException iex) {}
 
         Response publishDataset = UtilIT.publishDatasetViaNativeApi(datasetPersistentId, "major", apiToken);
         assertEquals(200, publishDataset.getStatusCode());
@@ -332,6 +408,13 @@ public class DatasetsIT {
         assertTrue(datasetContactFromExport.toString().contains("finch@mailinator.com"));
         assertTrue(firstValue.toString().contains("finch@mailinator.com"));
 
+        Response getDatasetVersion = UtilIT.getDatasetVersion(datasetPersistentId, ":latest-published", apiToken);
+        getDatasetVersion.prettyPrint();
+        getDatasetVersion.then().assertThat()
+                .body("data.datasetId", equalTo(datasetId))
+                .body("data.datasetPersistentId", equalTo(datasetPersistentId))
+                .statusCode(OK.getStatusCode());
+
         Response citationBlock = UtilIT.getMetadataBlockFromDatasetVersion(datasetPersistentId, null, null, apiToken);
         citationBlock.prettyPrint();
         citationBlock.then().assertThat()
@@ -363,9 +446,9 @@ public class DatasetsIT {
          */
         boolean nameRequiredForContactToAppear = true;
         if (nameRequiredForContactToAppear) {
-            assertEquals("Finch, Fiona", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.stdyInfo.contact"));
+            assertEquals("Finch, Fiona", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.citation.distStmt.contact"));
         } else {
-            assertEquals("finch@mailinator.com", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.stdyInfo.contact.@email"));
+            assertEquals("finch@mailinator.com", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.citation.distStmt.contact.@email"));
         }
         assertEquals(datasetPersistentId, XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.docDscr.citation.titlStmt.IDNo"));
 
@@ -387,6 +470,7 @@ public class DatasetsIT {
      * This test requires the root dataverse to be published to pass.
      */
     @Test
+    @Ignore
     public void testExport() {
 
         Response createUser = UtilIT.createRandomUser();
@@ -420,6 +504,15 @@ public class DatasetsIT {
         attemptToPublishZeroDotOne.then().assertThat()
                 .body("message", equalTo("Cannot publish as minor version. Re-try as major release."))
                 .statusCode(403);
+
+        logger.info("In testExport; attempting to publish, as major version");
+        //Return random sleep  9/13/2019
+        // 3 second sleep, to allow the indexing to finish: 
+        // Without it we've seen som DB dealocks
+
+        try {
+            Thread.sleep(3000l);
+        } catch (InterruptedException iex) {}
 
         Response publishDataset = UtilIT.publishDatasetViaNativeApi(datasetPersistentId, "major", apiToken);
         assertEquals(200, publishDataset.getStatusCode());
@@ -544,6 +637,12 @@ public class DatasetsIT {
         Response setToExcludeEmailFromExport = UtilIT.setSetting(SettingsServiceBean.Key.ExcludeEmailFromExport, "true");
         setToExcludeEmailFromExport.then().assertThat()
                 .statusCode(OK.getStatusCode());
+        // return random sleep  9/13/2019
+        // 3 second sleep, to allow the indexing to finish:
+
+        try {
+            Thread.sleep(3000l);
+        } catch (InterruptedException iex) {}
 
         Response publishDataset = UtilIT.publishDatasetViaNativeApi(datasetPersistentId, "major", apiToken);
         assertEquals(200, publishDataset.getStatusCode());
@@ -560,10 +659,10 @@ public class DatasetsIT {
         exportDatasetAsDdi.then().assertThat()
                 .statusCode(OK.getStatusCode());
 
-        assertEquals("Dataverse, Admin", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.stdyInfo.contact"));
+        assertEquals("Dataverse, Admin", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.citation.distStmt.contact"));
         // no "sammi@sample.com" to be found https://github.com/IQSS/dataverse/issues/3443
-        assertEquals("[]", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.stdyInfo.contact.@email"));
-        assertEquals("Sample Datasets, inc.", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.stdyInfo.contact.@affiliation"));
+        assertEquals("[]", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.citation.distStmt.contact.@email"));
+        assertEquals("Sample Datasets, inc.", XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.stdyDscr.citation.distStmt.contact.@affiliation"));
         assertEquals(datasetPersistentId, XmlPath.from(exportDatasetAsDdi.body().asString()).getString("codeBook.docDscr.citation.titlStmt.IDNo"));
 
         List<JsonObject> datasetContactsFromNativeGet = with(getDatasetJsonAfterPublishing.body().asString()).param("datasetContact", "datasetContact")
@@ -639,7 +738,13 @@ public class DatasetsIT {
         logger.info("identifier: " + identifier);
         String numericPart = identifier.replace("FK2/", ""); //remove shoulder from identifier
         assertTrue(StringUtils.isNumeric(numericPart));
+        //Return random sleep  9/13/2019        
 
+        try {
+            Thread.sleep(3000l);
+        } catch (Exception ex) {logger.warning("failed to execute sleep 3 sec.");}
+
+        
         Response deleteDatasetResponse = UtilIT.deleteDatasetViaNativeApi(datasetId, apiToken);
         deleteDatasetResponse.prettyPrint();
         assertEquals(200, deleteDatasetResponse.getStatusCode());
@@ -761,6 +866,14 @@ public class DatasetsIT {
          * asadmin create-jvm-options
          * "-Ddataverse.siteUrl=http\://localhost\:8080"
          */
+        
+        /* 
+         * Attempt to follow the private link url; as a user not otherwise 
+         * authorized to view the draft - and make sure they get the dataset page:
+         * 
+         * MAKE SURE TO READ the note below, about jsessions and cookies!
+        */
+        
         Response getDatasetAsUserWhoClicksPrivateUrl = given()
                 .header(API_TOKEN_HTTP_HEADER, apiToken)
                 .get(urlWithToken);
@@ -768,6 +881,70 @@ public class DatasetsIT {
         assertEquals("Darwin's Finches - " + dataverseAlias, title);
         assertEquals(OK.getStatusCode(), getDatasetAsUserWhoClicksPrivateUrl.getStatusCode());
 
+        /*
+         * NOTE, this is what happens when we attempt to access the dataset via the 
+         * private url, as implemented above: 
+         * 
+         * The private url page authorizes the user to view the dataset 
+         * by issuing a new jsession, and issuing a 302 redirect to the dataset 
+         * page WITH THE JSESSIONID ADDED TO THE URL - as in 
+         * dataset.xhtml?persistentId=xxx&jsessionid=yyy
+         * RestAssured's .get() method follows redirects by default - so in the 
+         * end the above works and we get the correct dataset. 
+         * But note that this relies on the jsessionid in the url. We've 
+         * experimented with disabling url-supplied jsessions (in PR #5316); 
+         * then the above stopped working - because now jsession is supplied 
+         * AS A COOKIE, which the RestAssured code above does not use, so 
+         * the dataset page refuses to show the dataset to the user. (So the 
+         * assertEquals code above fails, because the page title is not "Darwin's Finches", 
+         * but "Login Page")
+         * Below is an implementation of the test above that uses the jsession 
+         * cookie, instead of relying on the jsessionid in the URL: 
+         
+        // This should redirect us to the actual dataset page, and 
+        // give us a valid session cookie: 
+        
+        Response getDatasetAsUserWhoClicksPrivateUrl = given()
+                .header(API_TOKEN_HTTP_HEADER, apiToken)
+                .redirects().follow(false)
+                .get(urlWithToken);
+        // (note that we have purposefully asked not to follow redirects 
+        // automatically; this way we can test that we are being redirected
+        // to the right place, that we've been given the session cookie, etc.
+                
+        assertEquals(FOUND.getStatusCode(), getDatasetAsUserWhoClicksPrivateUrl.getStatusCode());
+        // Yes, javax.ws.rs.core.Response.Status.FOUND is 302!
+        String title = getDatasetAsUserWhoClicksPrivateUrl.getBody().htmlPath().getString("html.head.title");
+        assertEquals("Document moved", title);
+        
+        String redirectLink = getDatasetAsUserWhoClicksPrivateUrl.getBody().htmlPath().getString("html.body.a.@href");
+        assertNotNull(redirectLink);
+        assertTrue(redirectLink.contains("dataset.xhtml"));
+        
+        String jsessionid = getDatasetAsUserWhoClicksPrivateUrl.cookie("jsessionid");
+        assertNotNull(jsessionid);
+        
+        // ... and now we can try and access the dataset, with another HTTP GET, 
+        // sending the jsession cookie along:
+        
+        try { 
+            redirectLink = URLDecoder.decode(redirectLink, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            // do nothing - try to redirect to the url as is? 
+        }
+        
+        logger.info("redirecting to "+redirectLink+", using jsession "+jsessionid);
+        
+        getDatasetAsUserWhoClicksPrivateUrl = given()
+                .cookies("JSESSIONID", jsessionid)
+                .get(redirectLink);
+        
+        assertEquals(OK.getStatusCode(), getDatasetAsUserWhoClicksPrivateUrl.getStatusCode());
+        title = getDatasetAsUserWhoClicksPrivateUrl.getBody().htmlPath().getString("html.head.title");
+        assertEquals("Darwin's Finches - " + dataverseAlias, title);
+         
+        */
+        
         Response junkPrivateUrlToken = given()
                 .header(API_TOKEN_HTTP_HEADER, apiToken)
                 .get("/privateurl.xhtml?token=" + "junk");
@@ -925,6 +1102,90 @@ public class DatasetsIT {
         /**
          * @todo Should the Search API work with the Private URL token?
          */
+    }
+    
+    @Test
+    public void testAddRoles(){
+        
+        Response createUser = UtilIT.createRandomUser();
+        createUser.prettyPrint();
+        String username = UtilIT.getUsernameFromResponse(createUser);
+        String apiToken = UtilIT.getApiTokenFromResponse(createUser);
+        
+        Response createDataverseResponse = UtilIT.createRandomDataverse(apiToken);
+        createDataverseResponse.prettyPrint();
+        String dataverseAlias = UtilIT.getAliasFromResponse(createDataverseResponse);
+
+        Response createDatasetResponse = UtilIT.createRandomDatasetViaNativeApi(dataverseAlias, apiToken);
+        createDatasetResponse.prettyPrint();
+        Integer datasetId = UtilIT.getDatasetIdFromResponse(createDatasetResponse);
+
+        Response datasetAsJson = UtilIT.nativeGet(datasetId, apiToken);
+        datasetAsJson.then().assertThat()
+                .statusCode(OK.getStatusCode());
+       
+        String identifier = JsonPath.from(datasetAsJson.getBody().asString()).getString("data.identifier");
+        assertEquals(10, identifier.length());
+        
+        String protocol1 = JsonPath.from(datasetAsJson.getBody().asString()).getString("data.protocol");
+        String authority1 = JsonPath.from(datasetAsJson.getBody().asString()).getString("data.authority");
+        String identifier1 = JsonPath.from(datasetAsJson.getBody().asString()).getString("data.identifier");
+        String datasetPersistentId = protocol1 + ":" + authority1 + "/" + identifier1;
+
+       
+        
+        // Create another random user: 
+        
+        Response createRandomUser = UtilIT.createRandomUser();
+        createRandomUser.prettyPrint();
+        String randomUsername = UtilIT.getUsernameFromResponse(createRandomUser);
+        String randomUserApiToken = UtilIT.getApiTokenFromResponse(createRandomUser);
+        
+
+        //Give that random user permission
+        //(String definitionPoint, String role, String roleAssignee, String apiToken)
+        //Can't give yourself permission
+        Response giveRandoPermission = UtilIT.grantRoleOnDataset(datasetPersistentId, "fileDownloader", "@" + randomUsername, randomUserApiToken);
+                giveRandoPermission.prettyPrint();
+        assertEquals(401, giveRandoPermission.getStatusCode());
+        
+        giveRandoPermission = UtilIT.grantRoleOnDataset(datasetPersistentId, "fileDownloader", "@" + randomUsername, apiToken);
+                giveRandoPermission.prettyPrint();
+        assertEquals(200, giveRandoPermission.getStatusCode());
+        
+        String idToDelete = JsonPath.from(giveRandoPermission.getBody().asString()).getString("data.id");                
+
+        giveRandoPermission = UtilIT.grantRoleOnDataset(datasetPersistentId, "designatedHitter", "@" + randomUsername, apiToken);
+                giveRandoPermission.prettyPrint();
+                        giveRandoPermission.then().assertThat()
+                .contentType(ContentType.JSON)
+                .body("message", containsString("Cannot find role named 'designatedHitter' in dataverse "))
+                .statusCode(400);
+        assertEquals(400, giveRandoPermission.getStatusCode());
+        
+        //Try to delete Role with Id saved above
+        //Fails for lack of perms
+        Response deleteGrantedAccess = UtilIT.revokeRoleOnDataset(datasetPersistentId, new Long(idToDelete), randomUserApiToken);
+        deleteGrantedAccess.prettyPrint();
+        assertEquals(401, deleteGrantedAccess.getStatusCode());
+        
+        //Should be able to delete with proper apiToken
+        deleteGrantedAccess = UtilIT.revokeRoleOnDataset(datasetPersistentId, new Long(idToDelete), apiToken);
+        deleteGrantedAccess.prettyPrint();
+        assertEquals(200, deleteGrantedAccess.getStatusCode());
+        
+       Response deleteDatasetResponse = UtilIT.deleteDatasetViaNativeApi(datasetId, apiToken);
+        deleteDatasetResponse.prettyPrint();
+        assertEquals(200, deleteDatasetResponse.getStatusCode());
+        
+        Response deleteDataverseResponse = UtilIT.deleteDataverse(dataverseAlias, apiToken);
+        deleteDataverseResponse.prettyPrint();
+        assertEquals(200, deleteDataverseResponse.getStatusCode());
+
+        Response deleteUserResponse = UtilIT.deleteUser(username);
+        deleteUserResponse.prettyPrint();
+        assertEquals(200, deleteUserResponse.getStatusCode());
+        
     }
 
     @Test
@@ -1550,6 +1811,7 @@ public class DatasetsIT {
      * This test requires the root dataverse to be published to pass.
      */
     @Test
+    @Ignore
     public void testUpdatePIDMetadataAPI() {
 
         Response createUser = UtilIT.createRandomUser();
@@ -1577,7 +1839,12 @@ public class DatasetsIT {
 
         Response publishDataverse = UtilIT.publishDataverseViaSword(dataverseAlias, apiToken);
         assertEquals(200, publishDataverse.getStatusCode());
-
+        //Return random sleep  9/13/2019
+        //without it we've seen DB deadlocks
+        try {
+            Thread.sleep(3000l);
+        } catch (InterruptedException iex){}
+      
         Response publishDataset = UtilIT.publishDatasetViaNativeApi(datasetPersistentId, "major", apiToken);
         assertEquals(200, publishDataset.getStatusCode());
 

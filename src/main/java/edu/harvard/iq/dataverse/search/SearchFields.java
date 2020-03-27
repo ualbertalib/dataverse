@@ -10,6 +10,9 @@ package edu.harvard.iq.dataverse.search;
  * http://localhost:8080/api/admin/index/solr/schema` into the file in the
  * source tree when a metadata block update warrants it.
  *
+ * This process of updating schema.xml for new metadata block fields documented
+ * at doc/sphinx-guides/source/admin/metadatacustomization.rst
+ *
  * Generally speaking, we want the search fields to be readable. This is a
  * challenge for long field names but a power user should be able to type
  * "authorAffiliation:Harvard" into the general search box. A regular user is
@@ -94,6 +97,7 @@ public class SearchFields {
     public static final String DATAVERSE_AFFILIATION = "dvAffiliation";
     public static final String DATAVERSE_DESCRIPTION = "dvDescription";
     public static final String DATAVERSE_CATEGORY = "dvCategory";
+    
     /**
      * What is dvSubject_en for? How does it get populated into Solr? The
      * behavior changed so that now the subjects of dataverses are based on
@@ -113,6 +117,20 @@ public class SearchFields {
      * could have a convention like "subjectFacet" for the facets?
      */
     public static final String SUBJECT = "subject_ss";
+    
+    /*
+     * The category of the Dataverse (aka Dataverse Type). Named differently
+     * than DATAVERSE_CATEGORY so it can be searched but doesn't show up on the
+     * homepage facet
+     */
+    public static final String CATEGORY_OF_DATAVERSE = "categoryOfDataverse";
+    
+    /*
+     * The alias of the dataverse. This named differently because IDENTIFIER
+     * is used for dataset for its own identifier.
+     */
+    public static final String IDENTIFIER_OF_DATAVERSE = "identifierOfDataverse";
+    
     /**
      * @todo think about how to tie the fact that this needs to be multivalued
      * (_ss) because a multivalued facet (authorAffilition_ss) will be collapsed
@@ -160,6 +178,11 @@ public class SearchFields {
      * Indexed as text_en so it's searchable by lower case etc.
      */
     public static final String FILE_TAG_SEARCHABLE = "fileTags";
+    
+    /**
+     * Internal boolean indicating that the file has been deleted in the draft version.
+     */
+    public static final String FILE_DELETED = "fileDeleted";
     /*
      * (tabular) Data Tags are indexed as a string, since we are only planning to
      * use these in facet-like, exact searches:
@@ -187,10 +210,7 @@ public class SearchFields {
     // PUBLICATION_YEAR used to be called PUBLICATION_DATE.
     public static final String PUBLICATION_YEAR = "publicationDate";
     public static final String RELEASE_OR_CREATE_DATE = "dateSort"; 
-    /**
-     * i.e. "Mar 17, 2015"
-     */
-    public static final String RELEASE_OR_CREATE_DATE_SEARCHABLE_TEXT = "dateFriendly";
+
 
     public static final String DEFINITION_POINT = "definitionPointDocId";
     public static final String DEFINITION_POINT_DVOBJECT_ID = "definitionPointDvObjectId";
@@ -235,6 +255,13 @@ public class SearchFields {
 
     public static final String VARIABLE_NAME = "variableName";
     public static final String VARIABLE_LABEL = "variableLabel";
+    public static final String LITERAL_QUESTION = "literalQuestion";
+    public static final String INTERVIEW_INSTRUCTIONS = "interviewInstructions";
+    public static final String POST_QUESTION = "postQuestion";
+    public static final String VARIABLE_UNIVERSE = "variableUniverse";
+    public static final String VARIABLE_NOTES = "variableNotes";
+
+
     public static final String FULL_TEXT = "_text_";
 
 }

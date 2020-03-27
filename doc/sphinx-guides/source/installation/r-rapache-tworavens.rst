@@ -59,7 +59,7 @@ The statistical calculations are performed by R programs that run **on the serve
 `rApache <http://rapache.net/>`_ is used as the web front end for R on the server, so 
 that the browser application can talk to R over HTTP. 
 
-See the "Advanced Installation" section of the :doc:`prep` section for an example of running various components on more than one server.
+See the :ref:`advanced` section of :doc:`prep` for an example of running various components on more than one server.
 
 TwoRavens will need to obtain some tabular-data-specific metadata from 
 Dataverse -- the DDI fragment that describes the variables and some pre-processed
@@ -79,7 +79,7 @@ URLs need to be configured for this to work properly (this is done by the TwoRav
 installer script in step ``3.``)  
 
 If you install all components on a single server and front Glassfish with Apache 
-(see "Network Ports" under the :doc:`config` section), the component and 
+(see :ref:`network-ports` under the :doc:`config` section), the component and 
 data flow diagram might looks something like this:
 
 |tworavens_components|
@@ -343,7 +343,7 @@ TwoRavens and Dataverse!)*
 e. Enable TwoRavens Button in Dataverse
 ---------------------------------------
 
-Now that you have installed TwoRavens, you can make it available to your users by adding it an "external tool" for your Dataverse installation. (For more on external tools in general, see the :doc:`external-tools` section.)
+Now that you have installed TwoRavens, you can make it available to your users by adding it an "external tool" for your Dataverse installation. (For more on external tools in general, see the :doc:`/admin/external-tools` section of the Admin Guide.)
 
 First, download :download:`twoRavens.json <../_static/installation/files/root/external-tools/twoRavens.json>` as a starting point and edit ``toolUrl`` in that external tool manifest file to be the URL where you want TwoRavens to run. This is the URL reported by the installer script (as in the example at the end of step ``c.``, above).
 
@@ -470,7 +470,7 @@ an non-privileged user on a high port that's not accessible from the outside.
 Unlike Glassfish, Apache has a mechanism for running on a privileged port (in 
 this case, 443) as a non-privileged user. It is possible to use this 
 configuration, and have this Apache instance serve TwoRavens and rApache too, 
-all on the same server. Please see "Network Ports" under the :doc:`config` 
+all on the same server. Please see :ref:`network-ports` under the :doc:`config` 
 section, and the :doc:`shibboleth` section of the Installation Guide for more 
 information and configuration instructions.  
 

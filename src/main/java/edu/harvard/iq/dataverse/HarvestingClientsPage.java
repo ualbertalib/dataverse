@@ -20,9 +20,11 @@ import edu.harvard.iq.dataverse.timer.DataverseTimerServiceBean;
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import edu.harvard.iq.dataverse.util.JsfHelper;
 import static edu.harvard.iq.dataverse.util.JsfHelper.JH;
+import edu.harvard.iq.dataverse.util.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -76,6 +78,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
     private Dataverse dataverse;
     private Long dataverseId = null;
     private HarvestingClient selectedClient;
+    private boolean setListTruncated = false; 
     
     //private static final String solrDocIdentifierDataset = "dataset_";
     
@@ -124,7 +127,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
         configuredHarvestingClients = harvestingClientService.getAllHarvestingClients();
         
         pageMode = PageMode.VIEW;
-        FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, JH.localize("harvestclients.title"), JH.localize("harvestclients.toptip")));
+        FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, BundleUtil.getStringFromBundle("harvestclients.title"), BundleUtil.getStringFromBundle("harvestclients.toptip")));
         return null; 
     }
     
@@ -205,6 +208,9 @@ public class HarvestingClientsPage implements java.io.Serializable {
         return CreateStep.FOUR == this.createStep;
     }
     
+    public boolean isSetListTruncated() {
+        return setListTruncated;
+    }
     
     public void runHarvest(HarvestingClient harvestingClient) {
         try {
@@ -216,7 +222,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
             return;
         } 
                 
-        String successMessage = JH.localize("harvestclients.actions.runharvest.success");
+        String successMessage = BundleUtil.getStringFromBundle("harvestclients.actions.runharvest.success");
         successMessage = successMessage.replace("{0}", harvestingClient.getName());
         JsfHelper.addSuccessMessage(successMessage);
         
@@ -245,7 +251,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
         // and if not, what do we do? 
         // alternatively, should we make these 2 fields not editable at all?
         
-        this.newOaiSet = !StringUtils.isEmpty(harvestingClient.getHarvestingSet()) ? harvestingClient.getHarvestingSet() : "none";
+        this.newOaiSet = !StringUtils.isEmpty(harvestingClient.getHarvestingSet()) ? harvestingClient.getHarvestingSet() : "";
         this.newMetadataFormat = harvestingClient.getMetadataPrefix();
         this.newHarvestingStyle = harvestingClient.getHarvestStyle();
         
@@ -297,7 +303,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
                 
                 //engineService.submit(new DeleteHarvestingClientCommand(dvRequestService.getDataverseRequest(), selectedClient));
                 harvestingClientService.deleteClient(selectedClient.getId());
-                JsfHelper.addInfoMessage(JH.localize("harvestclients.tab.header.action.delete.infomessage"));
+                JsfHelper.addInfoMessage(BundleUtil.getStringFromBundle("harvestclients.tab.header.action.delete.infomessage"));
                 
             //} catch (CommandException ex) {
             //    String failMessage = "Selected harvesting client cannot be deleted.";
@@ -365,7 +371,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
         // from the harvesting url:
         newHarvestingClient.setArchiveUrl(makeDefaultArchiveUrl());
         // set default description - they can customize it as they see fit:
-        newHarvestingClient.setArchiveDescription(JH.localize("harvestclients.viewEditDialog.archiveDescription.default.generic"));
+        newHarvestingClient.setArchiveDescription(BundleUtil.getStringFromBundle("harvestclients.viewEditDialog.archiveDescription.default.generic"));
         
         
         // will try to save it now:
@@ -378,7 +384,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
             // NO, we no longer create timers here. It is the job of the Mother Timer!
             //dataverseTimerService.createHarvestTimer(newHarvestingClient);
             
-            String successMessage = JH.localize("harvestclients.newClientDialog.success");
+            String successMessage = BundleUtil.getStringFromBundle("harvestclients.newClientDialog.success");
             successMessage = successMessage.replace("{0}", newHarvestingClient.getName());
             JsfHelper.addSuccessMessage(successMessage);
 
@@ -486,7 +492,24 @@ public class HarvestingClientsPage implements java.io.Serializable {
 
             input.setValid(false);
             context.addMessage(toValidate.getClientId(),
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", JH.localize("harvestclients.newClientDialog.oaiMetadataFormat.required")));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", BundleUtil.getStringFromBundle("harvestclients.newClientDialog.oaiMetadataFormat.required")));
+
+        }
+    }
+    
+    public void validateRemoteArchiveStyle(FacesContext context, UIComponent toValidate, Object rawValue) {
+        String value = (String) rawValue;
+        UIInput input = (UIInput) toValidate;
+        input.setValid(true); // Optimistic approach
+        
+        // the only validation we want is to make sure the select one of the 
+        // values from the menu. 
+        if (context.getExternalContext().getRequestParameterMap().get("DO_VALIDATION") != null
+                && StringUtils.isEmpty(value)) {
+
+            input.setValid(false);
+            context.addMessage(toValidate.getClientId(),
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", BundleUtil.getStringFromBundle("harvestclients.newClientDialog.harvestingStyle.required")));
 
         }
     }
@@ -498,14 +521,14 @@ public class HarvestingClientsPage implements java.io.Serializable {
             if (getNewNickname().length() > 30 || (!Pattern.matches("^[a-zA-Z0-9\\_\\-]+$", getNewNickname())) ) {
                 //input.setValid(false);
                 FacesContext.getCurrentInstance().addMessage(getNewClientNicknameInputField().getClientId(),
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", JH.localize("harvestclients.newClientDialog.nickname.invalid")));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", BundleUtil.getStringFromBundle("harvestclients.newClientDialog.nickname.invalid")));
                 return false;
 
                 // If it passes the regex test, check 
             } else if ( harvestingClientService.findByNickname(getNewNickname()) != null ) {
                 //input.setValid(false);
                 FacesContext.getCurrentInstance().addMessage(getNewClientNicknameInputField().getClientId(),
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", JH.localize("harvestclients.newClientDialog.nickname.alreadyused")));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", BundleUtil.getStringFromBundle("harvestclients.newClientDialog.nickname.alreadyused")));
                 return false;
             }
             return true;
@@ -513,14 +536,14 @@ public class HarvestingClientsPage implements java.io.Serializable {
         
         // Nickname field is empty:
         FacesContext.getCurrentInstance().addMessage(getNewClientNicknameInputField().getClientId(),
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", JH.localize("harvestclients.newClientDialog.nickname.required")));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", BundleUtil.getStringFromBundle("harvestclients.newClientDialog.nickname.required")));
         return false;
     }
     
     public boolean validateSelectedDataverse() {
         if (selectedDestinationDataverse == null) {
             FacesContext.getCurrentInstance().addMessage(getSelectedDataverseMenu().getClientId(),
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", JH.localize("harvestclients.newClientDialog.dataverse.required")));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", BundleUtil.getStringFromBundle("harvestclients.newClientDialog.dataverse.required")));
             return false;
         }
         return true;
@@ -558,10 +581,15 @@ public class HarvestingClientsPage implements java.io.Serializable {
             }
             // And if that worked, the list of sets provided:
 
+            ArrayList<String> sets = null;
+            
+            // reset the sets menu:
+            setOaiSetsSelectItems(null);
+            setListTruncated = false;
+            
             if (success) {
                 try {
-                    List<String> sets = oaiHandler.runListSets();
-                    createOaiSetsSelectItems(sets);
+                    sets = oaiHandler.runListSets();
                 } catch (Exception ex) {
                     //success = false; 
                     // ok - we'll try and live without sets for now... 
@@ -575,16 +603,34 @@ public class HarvestingClientsPage implements java.io.Serializable {
             }
 
             if (success) {
+                if (sets != null) {
+                    if (oaiHandler.isSetListTruncated()) {
+                        // If it was taking too long to retrieve the full list 
+                        // of sets (oai.datacite.org/oai - looking at you! -
+                        // and we had to truncate it:
+                        setListTruncated = true;
+
+                        // And if we are re-configuring an existing client, with 
+                        // a specific set in place - let's make sure it's on the pull down 
+                        // menu list; even if we have failed to retrieve it from the server. 
+                        if (StringUtil.nonEmpty(this.newOaiSet)) {
+                            if (!sets.contains(this.newOaiSet)) {
+                                sets.add(0, this.newOaiSet);
+                            }
+                        }
+                    }
+                    createOaiSetsSelectItems(sets);
+                }
                 return true;
             }
 
             FacesContext.getCurrentInstance().addMessage(getNewClientUrlInputField().getClientId(),
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", getNewHarvestingUrl() + ": " + JH.localize("harvestclients.newClientDialog.url.invalid")));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "", getNewHarvestingUrl() + ": " + BundleUtil.getStringFromBundle("harvestclients.newClientDialog.url.invalid")));
             return false;
 
         }
         FacesContext.getCurrentInstance().addMessage(getNewClientUrlInputField().getClientId(),
-                new FacesMessage(FacesMessage.SEVERITY_ERROR, "", getNewHarvestingUrl() + ": " + JH.localize("harvestclients.newClientDialog.url.required")));
+                new FacesMessage(FacesMessage.SEVERITY_ERROR, "", getNewHarvestingUrl() + ": " + BundleUtil.getStringFromBundle("harvestclients.newClientDialog.url.required")));
         return false;
     }
     
@@ -642,7 +688,8 @@ public class HarvestingClientsPage implements java.io.Serializable {
     UIInput newClientNicknameInputField;
     UIInput newClientUrlInputField;
     UIInput hiddenInputField; 
-    /*UISelectOne*/ UIInput metadataFormatMenu; 
+    /*UISelectOne*/ UIInput metadataFormatMenu;
+    UIInput remoteArchiveStyleMenu;
     UIInput selectedDataverseMenu;
     
     private String newNickname = "";
@@ -673,7 +720,7 @@ public class HarvestingClientsPage implements java.io.Serializable {
         this.initialSettingsValidated = false;
         this.newOaiSet = "";
         this.newMetadataFormat = "";
-        this.newHarvestingStyle = HarvestingClient.HARVEST_STYLE_DATAVERSE;
+        this.newHarvestingStyle = "";
         
         this.harvestTypeRadio = harvestTypeRadioOAI;
         this.harvestingScheduleRadio = harvestingScheduleRadioNone; 
@@ -837,6 +884,14 @@ public class HarvestingClientsPage implements java.io.Serializable {
 
     public void setMetadataFormatMenu(UIInput metadataFormatMenu) {
         this.metadataFormatMenu = metadataFormatMenu;
+    }
+    
+    public UIInput getRemoteArchiveStyleMenu() {
+        return remoteArchiveStyleMenu;
+    }
+
+    public void setRemoteArchiveStyleMenu(UIInput remoteArchiveStyleMenu) {
+        this.remoteArchiveStyleMenu = remoteArchiveStyleMenu;
     }
     
     public UIInput getSelectedDataverseMenu() {

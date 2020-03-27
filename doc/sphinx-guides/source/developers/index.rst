@@ -19,6 +19,7 @@ Developer Guide
    sql-upgrade-scripts
    testing
    documentation
+   dependencies
    debugging
    coding-style
    deployment
@@ -26,7 +27,9 @@ Developer Guide
    making-releases
    tools
    unf/index
+   make-data-count
    remote-users
    geospatial
    selinux
    big-data-support
+   workflows

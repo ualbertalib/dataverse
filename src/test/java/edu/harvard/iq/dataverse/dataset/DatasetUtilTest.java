@@ -1,9 +1,13 @@
 package edu.harvard.iq.dataverse.dataset;
 
 import edu.harvard.iq.dataverse.DataFile;
+import edu.harvard.iq.dataverse.DataFileCategory;
 import edu.harvard.iq.dataverse.Dataset;
+import edu.harvard.iq.dataverse.DatasetField;
+import edu.harvard.iq.dataverse.DatasetFieldType;
 import edu.harvard.iq.dataverse.DatasetVersion;
 import edu.harvard.iq.dataverse.FileMetadata;
+import edu.harvard.iq.dataverse.DatasetFieldType.FieldType;
 import edu.harvard.iq.dataverse.dataaccess.ImageThumbConverter;
 import edu.harvard.iq.dataverse.mocks.MocksFactory;
 import java.io.InputStream;
@@ -25,7 +29,8 @@ public class DatasetUtilTest {
         DataFile dataFile = MocksFactory.makeDataFile();
         dataFile.setContentType("image/");
         dataFile.setOwner(dataset);
-        dataFile.setStorageIdentifier("file://src/test/resources/images/coffeeshop.png");
+        System.setProperty("dataverse.files.testfile.type", "file");
+        dataFile.setStorageIdentifier("testfile://src/test/resources/images/coffeeshop.png");
 
         System.out.println(ImageThumbConverter.isThumbnailAvailable(dataFile));
         DatasetVersion version = dataset.getCreateVersion();
@@ -41,7 +46,8 @@ public class DatasetUtilTest {
         assertNull(DatasetUtil.getThumbnail(null, null));
 
         Dataset dataset = MocksFactory.makeDataset();
-        dataset.setStorageIdentifier("file://");
+        System.setProperty("dataverse.files.testfile.type", "file");
+        dataset.setStorageIdentifier("testfile://");
         dataset.setUseGenericThumbnail(true);
 
         assertNull(DatasetUtil.getThumbnail(dataset));
@@ -103,4 +109,55 @@ public class DatasetUtilTest {
         assertEquals(false, DatasetUtil.isDatasetLogoPresent(dataset));
     }
 
+    @Test
+    public void testGetDatasetSummaryField_defaultSelectionWithAndWithoutMatches() {
+        DatasetVersion version = new DatasetVersion();
+        List<DatasetField> fields = new ArrayList<DatasetField>();
+
+        String[] fieldNames = {"subject", "keyword", "random-notInDefault"};
+        for (String fieldName : fieldNames) {
+            DatasetField field = DatasetField.createNewEmptyDatasetField(new DatasetFieldType(fieldName, FieldType.TEXT, false), version);
+            field.setId(1l);
+            fields.add(field);
+        }
+        version.setDatasetFields(fields);
+
+        assertEquals(2, DatasetUtil.getDatasetSummaryFields(version, null).size());
+        assertEquals(2, DatasetUtil.getDatasetSummaryFields(version, "").size());
+    }
+
+    @Test
+    public void testGetDatasetSummaryField_defaultSelectionWithoutDatasetFields() {
+        DatasetVersion version = new DatasetVersion();
+        List<DatasetField> fields = new ArrayList<DatasetField>();
+        version.setDatasetFields(fields);
+
+        assertEquals(0, DatasetUtil.getDatasetSummaryFields(version, null).size());
+        assertEquals(0, DatasetUtil.getDatasetSummaryFields(version, "").size());
+    }
+
+    @Test
+    public void testGetDatasetSummaryField_withSelectionWithoutDatasetFields() {
+        DatasetVersion version = new DatasetVersion();
+        List<DatasetField> fields = new ArrayList<DatasetField>();
+        version.setDatasetFields(fields);
+
+        assertEquals(0, DatasetUtil.getDatasetSummaryFields(version, "subject,randomSelector").size());
+    }
+
+    @Test
+    public void testGetDatasetSummaryField_withSelectionWithoutMatches() {
+        DatasetVersion version = new DatasetVersion();
+        List<DatasetField> fields = new ArrayList<DatasetField>();
+
+        String[] fieldNames = {"subject"};
+        for (String fieldName : fieldNames) {
+            DatasetField field = DatasetField.createNewEmptyDatasetField(new DatasetFieldType(fieldName, FieldType.TEXT, false), version);
+            field.setId(1l);
+            fields.add(field);
+        }
+        version.setDatasetFields(fields);
+
+        assertEquals(0, DatasetUtil.getDatasetSummaryFields(version, "object").size());
+    }
 }

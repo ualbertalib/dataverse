@@ -49,7 +49,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Logger;
 import org.apache.commons.io.IOUtils;
-import org.primefaces.util.Base64;
+//import org.primefaces.util.Base64;
+import java.util.Base64;
 
 /**
  *
@@ -146,12 +147,11 @@ public class ImageThumbConverter {
 
         try {
             storageIO.open();
-            Channel cachedThumbnailChannel = storageIO.openAuxChannel(THUMBNAIL_SUFFIX + size);
-            if (cachedThumbnailChannel == null) {
-                logger.warning("Null channel for aux object " + THUMBNAIL_SUFFIX + size);
+            cachedThumbnailInputStream = storageIO.getAuxFileAsInputStream(THUMBNAIL_SUFFIX + size);
+            if (cachedThumbnailInputStream == null) {
+                logger.warning("Null stream for aux object " + THUMBNAIL_SUFFIX + size);
                 return null;
             }
-            cachedThumbnailInputStream = Channels.newInputStream((ReadableByteChannel) cachedThumbnailChannel);
             int cachedThumbnailSize = (int) storageIO.getAuxObjectSize(THUMBNAIL_SUFFIX + size);
 
             InputStreamIO inputStreamIO = new InputStreamIO(cachedThumbnailInputStream, cachedThumbnailSize);
@@ -271,12 +271,12 @@ public class ImageThumbConverter {
 
         try {
             storageIO.open();
+            return generateImageThumbnailFromInputStream(storageIO, size, storageIO.getInputStream());
         } catch (IOException ioex) {
             logger.warning("caught IOException trying to open an input stream for " + storageIO.getDataFile().getStorageIdentifier() + ioex);
             return false;
         }
-
-        return generateImageThumbnailFromInputStream(storageIO, size, storageIO.getInputStream());
+        
     }
 
     /*
@@ -529,7 +529,15 @@ public class ImageThumbConverter {
                 logger.fine("inside getImageThumbnailAsBase64FromInputStream; read " + total + " bytes of raw thumbnail image.");
 
                 if (buffer != null) {
-                    String imageDataBase64 = Base64.encodeToString(cachingByteStream.toByteArray(), false);
+                    //String imageDataBase64 = Base64.encodeToString(cachingByteStream.toByteArray(), false);
+                    String imageDataBase64 = Base64.getEncoder().encodeToString(cachingByteStream.toByteArray());
+                    // TODO: 
+                    // verify that the base64-encoded thumbnails on the dataset and dataverse pages are
+                    // still working; PrimeFace's Base64 implementation was discontinued in 7.0, 
+                    // in favor of java.util.Base64 available in Java 1.8. However, the former does not seem to 
+                    // offer a way to generate a base64 string without line breaks - and that's how we used to generate these 
+                    // thumbnail strings (the "false" argument in the commented-out line above). 
+                    // Need to verify that new lines in these strings don't break the pages. 
                     return FileUtil.DATA_URI_SCHEME + imageDataBase64;
                 }
             }

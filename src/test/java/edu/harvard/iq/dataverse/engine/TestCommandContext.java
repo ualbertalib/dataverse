@@ -2,12 +2,16 @@ package edu.harvard.iq.dataverse.engine;
 
 import edu.harvard.iq.dataverse.authorization.providers.builtin.BuiltinUserServiceBean;
 import edu.harvard.iq.dataverse.*;
+import edu.harvard.iq.dataverse.actionlogging.ActionLogServiceBean;
 import edu.harvard.iq.dataverse.authorization.AuthenticationServiceBean;
 import edu.harvard.iq.dataverse.authorization.groups.GroupServiceBean;
 import edu.harvard.iq.dataverse.authorization.groups.impl.explicit.ExplicitGroupServiceBean;
+import edu.harvard.iq.dataverse.confirmemail.ConfirmEmailServiceBean;
 import edu.harvard.iq.dataverse.datacapturemodule.DataCaptureModuleServiceBean;
+import edu.harvard.iq.dataverse.engine.command.Command;
 import edu.harvard.iq.dataverse.engine.command.CommandContext;
 import edu.harvard.iq.dataverse.ingest.IngestServiceBean;
+import edu.harvard.iq.dataverse.pidproviders.FakePidProviderServiceBean;
 import edu.harvard.iq.dataverse.privateurl.PrivateUrlServiceBean;
 import edu.harvard.iq.dataverse.search.IndexBatchServiceBean;
 import edu.harvard.iq.dataverse.search.IndexServiceBean;
@@ -17,6 +21,8 @@ import edu.harvard.iq.dataverse.search.savedsearch.SavedSearchServiceBean;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.SystemConfig;
 import edu.harvard.iq.dataverse.workflow.WorkflowServiceBean;
+import java.util.List;
+import java.util.Stack;
 import javax.persistence.EntityManager;
 
 /**
@@ -125,6 +131,11 @@ public class TestCommandContext implements CommandContext {
     }
 
     @Override
+    public FakePidProviderServiceBean fakePidProvider() {
+        return null;
+    }
+
+    @Override
     public HandlenetServiceBean handleNet() {
         return null;
     }
@@ -217,5 +228,45 @@ public class TestCommandContext implements CommandContext {
     @Override
     public DataCaptureModuleServiceBean dataCaptureModule() {
         return null;
+    }
+    
+    @Override
+    public FileDownloadServiceBean fileDownload() {
+        return null;
+    }
+    
+    @Override
+    public ConfirmEmailServiceBean confirmEmail() {
+        return null;
+    }
+    
+    @Override
+    public ActionLogServiceBean actionLog() {
+        return null;
+    }
+
+    @Override
+    public void beginCommandSequence() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public boolean completeCommandSequence(Command command) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void cancelCommandSequence() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Stack<Command> getCommandsCalled() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void addCommand(Command command) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
