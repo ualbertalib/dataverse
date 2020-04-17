@@ -153,6 +153,7 @@ public class BagGenerator {
 //            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
 //                    .register("https", sslConnectionFactory).build();
 
+            // use http instead of https in docker environment
 			RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory>create();
 			Registry<ConnectionSocketFactory> registry = builder
 					.register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
