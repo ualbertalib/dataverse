@@ -14,9 +14,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,10 +21,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.ResourceBundle;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +32,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 
-import edu.harvard.iq.dataverse.util.BundleUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.archivers.zip.ParallelScatterZipCreator;
 import org.apache.commons.compress.archivers.zip.ScatterZipOutputStream;
@@ -56,15 +51,12 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.ssl.SSLContextBuilder;
-
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.json.JSONArray;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -74,6 +66,7 @@ import com.google.gson.JsonSyntaxException;
 
 import edu.harvard.iq.dataverse.DataFile;
 import edu.harvard.iq.dataverse.DataFile.ChecksumType;
+import edu.harvard.iq.dataverse.util.BundleUtil;
 import edu.harvard.iq.dataverse.util.json.JsonLDTerm;
 
 public class BagGenerator {
@@ -148,17 +141,11 @@ public class BagGenerator {
         try {
             // Using Dataverse, all the URLs to be retrieved should be on the current server, so allowing self-signed certs and not verifying hostnames are useful in testing and 
             // shouldn't be a significant security issue. This should not be allowed for arbitrary OREMap sources.
-            SSLContextBuilder builder = new SSLContextBuilder();
-            try {
-                builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-            } catch (KeyStoreException e) {
-                e.printStackTrace();
-            }
 
-            SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(builder.build(), NoopHostnameVerifier.INSTANCE);
-
-            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
-                    .register("https", sslConnectionFactory).build();
+            // Fix BagIt exporter on Docker, using http instead of https
+			RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory>create();
+			Registry<ConnectionSocketFactory> registry = builder
+					.register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
             cm = new PoolingHttpClientConnectionManager(registry);
 
             cm.setDefaultMaxPerRoute(numConnections);
@@ -167,7 +154,7 @@ public class BagGenerator {
             client = HttpClients.custom().setConnectionManager(cm).setDefaultRequestConfig(config).build();
 
             scatterZipCreator = new ParallelScatterZipCreator(Executors.newFixedThreadPool(numConnections));
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+        } catch (Exception e) {
             logger.warning("Aint gonna work");
             e.printStackTrace();
         }
