@@ -65,8 +65,8 @@ WORKDIR /opt/dv
 
 # need to take DOI provider info from build args as of ec377d2a4e27424db8815c55ce544deee48fc5e0
 # Default to EZID; use built-args to switch to DataCite (or potentially handles)
-#ARG DoiProvider=EZID
-ARG DoiProvider=FAKE
+ARG DoiProvider=EZID
+#ARG DoiProvider=FAKE
 ARG doi_baseurl=https://ezid.cdlib.org
 ARG doi_username=apitest
 ARG doi_password=apitest
