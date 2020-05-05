@@ -28,6 +28,7 @@ RUN sudo -u postgres /usr/pgsql-9.6/bin/initdb -D /var/lib/pgsql/data
 
 # copy configuration related files
 RUN cp /tmp/dv/pg_hba.conf /var/lib/pgsql/data/
+RUN cp /tmp/dv/postgresql.conf /var/lib/pgsql/data/
 RUN cp -r /opt/solr-7.7.2/server/solr/configsets/_default /opt/solr-7.7.2/server/solr/collection1
 RUN cp /tmp/dv/schema*.xml /opt/solr-7.7.2/server/solr/collection1/conf/
 RUN cp /tmp/dv/solrconfig.xml /opt/solr-7.7.2/server/solr/collection1/conf/solrconfig.xml
